@@ -4,7 +4,7 @@ import vm from 'node:vm';
 class FakeElement {
   constructor(tag) {
     this.tagName = tag;
-    this.style = {};
+    this.style = { setProperty(name, value) { this[name] = value; } };
     this.children = [];
     this.listeners = {};
     this.attributes = {};
@@ -242,64 +242,38 @@ if (JSON.stringify(persistedWidgetOrder) !== JSON.stringify(originalBackendOrder
 
 const topPreview = node.domWidgets.get('zrl_composition_preview');
 const emulsionWidget = node.domWidgets.get('zrl_emulsion_atlas');
+const tabsWidget = node.domWidgets.get('zrl_tabs');
+const colorWidget = node.domWidgets.get('zrl_color_controls');
 const lightWidget = node.domWidgets.get('zrl_light_controls');
-const bottomWidget = node.domWidgets.get('zrl_bottom_controls');
-const leakControlsWidget = node.domWidgets.get('zrl_light_leak_controls');
-const opticalWidget = node.domWidgets.get('zrl_optical_controls');
 const toneWidget = node.domWidgets.get('zrl_tone_controls');
-if (!topPreview || !emulsionWidget || !lightWidget || !bottomWidget || !leakControlsWidget || !opticalWidget || !toneWidget) {
+const leakControlsWidget = node.domWidgets.get('zrl_leak_controls');
+const opticalWidget = node.domWidgets.get('zrl_optics_controls');
+const grainWidget = node.domWidgets.get('zrl_grain_controls');
+if (!topPreview || !emulsionWidget || !tabsWidget || !colorWidget || !lightWidget || !toneWidget || !leakControlsWidget || !opticalWidget || !grainWidget) {
   throw new Error('One or more DOM widgets are missing');
 }
-if (node.widgets.indexOf(topPreview) > node.widgets.findIndex((widget) => widget.name === 'grain_amount')) {
-  throw new Error('Composition preview is not positioned at the top of the node');
+const domOrder = node.widgets.filter((widget) => node.domWidgets.has(widget.name)).map((widget) => widget.name);
+if (domOrder.slice(0, 3).join(',') !== 'zrl_composition_preview,zrl_emulsion_atlas,zrl_tabs') {
+  throw new Error('Preview, emulsion row and tab strip are not stacked at the top of the node');
 }
-if (node.widgets.indexOf(emulsionWidget) <= node.widgets.indexOf(topPreview) ||
-    node.widgets.indexOf(emulsionWidget) >= node.widgets.findIndex((widget) => widget.name === 'grain_amount')) {
-  throw new Error('Color Film Emulsion selector is not the first parameter below the Preview image');
+if (node.widgets.indexOf(grainWidget) > node.widgets.findIndex((widget) => widget.name === 'grain_amount')) {
+  throw new Error('Darkroom panels are not placed above the hidden backend widgets');
 }
-if (node.widgets.indexOf(lightWidget) >= node.widgets.findIndex((widget) => widget.name === 'solarization')) {
-  throw new Error('Bloom/Halation two-column controls are not positioned before Sabattier');
+// Only the preview may stretch; every other panel reports its own content height.
+if (topPreview.getMinHeight() !== 280 || topPreview.getMaxHeight) throw new Error('Preview does not absorb the spare node height');
+for (const widget of [emulsionWidget, tabsWidget, colorWidget, lightWidget, toneWidget, leakControlsWidget, opticalWidget, grainWidget]) {
+  if (typeof widget.getMinHeight !== 'function' || typeof widget.getMaxHeight !== 'function') throw new Error(`${widget.name} does not report a fixed content height`);
 }
-if (node.widgets.indexOf(toneWidget) >= node.widgets.findIndex((widget) => widget.name === 'solarization')) {
-  throw new Error('Anti-AI/Sabattier controls are not positioned before their hidden backend fields');
+for (const name of ['zrl_divider_sabattier', 'zrl_divider_light_leak', 'zrl_divider_optical_finish', 'zrl_bottom_controls']) {
+  if (node.domWidgets.has(name)) throw new Error(`${name} should no longer exist`);
 }
-if (node.widgets.indexOf(leakControlsWidget) >= node.widgets.findIndex((widget) => widget.name === 'leak_mode')) {
-  throw new Error('Combined Light Leak controls are not positioned before their hidden backend fields');
-}
-for (const dividerName of ['zrl_divider_sabattier', 'zrl_divider_light_leak', 'zrl_divider_optical_finish']) {
-  if (!node.domWidgets.has(dividerName)) throw new Error(`${dividerName} is missing`);
-}
-const lightLeakRegion = leakControlsWidget.element;
-const standardRegionDividers = ['zrl_divider_sabattier', 'zrl_divider_light_leak', 'zrl_divider_optical_finish']
-  .map((name) => node.domWidgets.get(name).element);
-for (const [index, divider] of standardRegionDividers.entries()) {
-  const dividerName = standardRegionDividers.length === 3
-    ? ['zrl_divider_sabattier', 'zrl_divider_light_leak', 'zrl_divider_optical_finish'][index]
-    : 'unknown';
-  const dividerWidget = node.domWidgets.get(dividerName);
-  if (divider.attributes['data-zrl-region-separator'] !== 'standard' ||
-      divider.style.height !== '1px' || divider.style.minHeight !== '1px' ||
-      divider.style.maxHeight !== '1px' || divider.style.flex !== '0 0 1px' ||
-      divider.style.padding !== '0' || divider.style.border !== '0' || !divider.style.background) {
-    throw new Error('Main photographic regions must use one consistent constrained one-pixel separator');
-  }
-  if (dividerWidget?.getMinHeight?.() !== 1 || dividerWidget?.getMaxHeight?.() !== 1) {
-    throw new Error(`${dividerName} must override ComfyUI DOM-widget default minimum height with 1 graph unit`);
-  }
-}
-for (const [name, element] of [['Bloom/Halation', lightWidget.element], ['Anti-AI/Sabattier', toneWidget.element], ['Light Leak', lightLeakRegion]]) {
-  if (element.style.borderTop || element.style.borderBottom) {
-    throw new Error(`${name} adds a redundant horizontal border beside its explicit region separator`);
-  }
-}
-if (opticalWidget.element.style.borderTop || opticalWidget.element.style.borderBottom) {
-  throw new Error('Soft Focus/Vignette adds a redundant horizontal border beside its explicit region separator');
-}
-const grainRegion = bottomWidget.element.children[0];
-if (grainRegion.attributes['data-zrl-region'] !== 'grain-texture-detail' || grainRegion.style.borderTop !== '2px solid #FFFFFF') {
-  throw new Error('Film Grain/Procedural Texture region must have one emphasized two-pixel white preview-boundary separator');
-}
-if (grainRegion.style.borderBottom) throw new Error('Film Grain/Procedural Texture region has an unexpected extra horizontal boundary');
+const tabPanels = { color: colorWidget, light: lightWidget, tone: toneWidget, leak: leakControlsWidget, optics: opticalWidget, grain: grainWidget };
+const tabButtons = tabsWidget.element.children;
+if (tabButtons.map((button) => button.textContent).join(',') !== 'Color,Light,Tone,Leak,Optics,Grain') throw new Error('Tab strip labels are missing or out of order');
+const visibleTabs = () => Object.entries(tabPanels).filter(([, widget]) => !widget.element.hidden).map(([id]) => id);
+if (node.properties.zrl_tab !== 'color' || visibleTabs().join() !== 'color' || tabButtons[0].attributes['aria-selected'] !== 'true') throw new Error('Color tab is not the default single visible panel');
+tabButtons[1].dispatch('click');
+if (node.properties.zrl_tab !== 'light' || visibleTabs().join() !== 'light' || tabButtons[1].attributes['aria-selected'] !== 'true') throw new Error('Clicking a tab did not show only its panel');
 if (!node.widgets.find((item) => item.name === 'mackie_lines').hidden) throw new Error('Mackie Lines slider should be hidden from the UI');
 for (const name of ['anti_ai', 'exposure', 'solarization', 'highlight_confinement', 'soft_focus_amount', 'soft_focus_radius', 'vignette_amount', 'vignette_feather', 'noise_texture', 'noise_amount', 'noise_seed', 'noise_scale', 'noise_blend_mode']) {
   if (!node.widgets.find((item) => item.name === name).hidden) throw new Error(`${name} native widget should be hidden behind the two-column controls`);
@@ -307,22 +281,19 @@ for (const name of ['anti_ai', 'exposure', 'solarization', 'highlight_confinemen
 if (opticalWidget.element.style.gridTemplateColumns !== 'repeat(2, minmax(0, 1fr))') throw new Error('Soft Focus and Vignette are not arranged as a two-column group');
 
 const topPanel = topPreview.element;
-const headerRow = topPanel.children[0];
-const titleGroup = headerRow.children[0];
-const brandHeader = headerRow.children[1];
-const languageActions = headerRow.children[2];
-const languageControlRow = languageActions.children[0];
-const languageIcon = languageControlRow.children[0];
-const languageSelect = languageControlRow.children[1];
-const resetSlot = languageActions.children[1];
-if (resetSlot.children.length !== 1 || resetSlot.children[0].textContent !== '↺  Reset to Defaults') throw new Error('Reset to Defaults is not directly below the language selector');
-const emulsionColumn = emulsionWidget.element.children[0];
-const emulsionLabel = emulsionColumn.children[0];
-const emulsionControlRow = emulsionColumn.children[1];
-const emulsionSelect = emulsionControlRow.children[0];
-const emulsionTrigger = emulsionControlRow.children[1];
+const previewUI = node._zrlPreviewUI;
+const previewCard = topPanel.children[0];
+if (previewCard !== previewUI.card || previewCard.className !== 'zrl-card') throw new Error('Preview card is missing');
+const languageIcon = previewUI.languageIcon;
+const languageSelect = previewUI.languageSelect;
+const resetSlot = previewUI.resetSlot;
+if (resetSlot.children.length !== 2 || resetSlot.children[1].textContent !== '↺' || !resetSlot.children[1].title) throw new Error('Reset icon is not beside the language globe on the preview');
 const emulsionUI = node._zrlEmulsionUI;
-const whiteBalanceColumn = emulsionWidget.element.children[1];
+const emulsionSelect = emulsionWidget.element.children[0];
+const emulsionTrigger = emulsionWidget.element.children[1];
+const emulsionStepper = emulsionWidget.element.children[2];
+const [emulsionResponseMinus, emulsionResponseValue, emulsionResponsePlus] = emulsionStepper.children;
+const whiteBalanceColumn = colorWidget.element.children[0];
 const whiteBalanceHeading = whiteBalanceColumn.children[0];
 const whiteBalanceControlRow = whiteBalanceColumn.children[1];
 const whiteBalanceReset = whiteBalanceControlRow.children[0];
@@ -336,36 +307,17 @@ const whiteBalanceInnerRim = whiteBalanceFrame.children[0];
 const whiteBalanceWheel = whiteBalanceInnerRim.children[0];
 const whiteBalanceCenter = whiteBalanceWheel.children[0];
 const whiteBalancePuck = whiteBalanceWheel.children[1];
-if (emulsionLabel.textContent !== 'COLOR FILM EMULSION') throw new Error('Emulsion atlas label is missing');
-const emulsionResponseRow = emulsionColumn.children[2];
-const emulsionResponseLabel = emulsionResponseRow.children[0];
-const emulsionResponseInput = emulsionResponseRow.children[1];
-const emulsionResponseValue = emulsionResponseRow.children[2];
-if (emulsionResponseRow.attributes['data-zrl-control'] !== 'emulsion_response' || emulsionResponseLabel.textContent !== 'EMULSION RESPONSE') throw new Error('Emulsion Response control is not placed directly beneath the emulsion selector');
-if (emulsionResponseInput.type !== 'range' || emulsionResponseInput.min !== '0.5' || emulsionResponseInput.max !== '3' || emulsionResponseInput.step !== '0.01' || emulsionResponseInput.value !== '1') throw new Error('Emulsion Response slider has an incorrect range or default');
-if (emulsionResponseValue.textContent !== '1.00×' || !emulsionResponseInput.title) throw new Error('Emulsion Response value or hover description is missing');
-if (emulsionWidget.element.style.gridTemplateColumns !== 'minmax(0, 1fr) minmax(0, 1fr)') throw new Error('Emulsion dropdown and white-balance wheel are not arranged in two half-width columns');
-if (emulsionWidget.element.style.alignItems !== 'stretch') throw new Error('Emulsion and White Balance columns do not stretch to the same shared section height');
-if (emulsionSelect.style.width !== '100%') throw new Error('Emulsion dropdown does not fill only its half-width column');
-if (emulsionControlRow.style.height !== '82px' || emulsionControlRow.style.alignItems !== 'center' || emulsionSelect.style.height !== '30px' || emulsionTrigger.style.height !== '30px') throw new Error('Emulsion dropdown is not vertically centered in the shared control row');
+if (emulsionStepper.attributes['data-zrl-control'] !== 'emulsion_response' || !emulsionStepper.title) throw new Error('Emulsion Response stepper is missing beside the emulsion selector');
+if (emulsionResponseValue.textContent !== '1.00×') throw new Error('Emulsion Response stepper does not start at 1.00×');
 if (emulsionSelect.style.display !== 'none' || emulsionTrigger.attributes.role !== 'combobox') throw new Error('Emulsion selector is not using the preview-safe custom dropdown trigger');
-const topDividerReferenceColumn = lightWidget.element.children.find((child) => child.style?.borderRight);
-if (!topDividerReferenceColumn || emulsionColumn.style.borderRight !== topDividerReferenceColumn.style.borderRight || emulsionColumn.style.paddingRight !== '6px' || whiteBalanceColumn.style.paddingLeft !== '2px') throw new Error('Emulsion / White Balance vertical separator does not match the Halation / Bloom divider column geometry');
-if (whiteBalanceHeading.textContent !== 'WHITE BALANCE' || whiteBalanceHeading.style.alignSelf !== 'flex-end' || whiteBalanceHeading.style.textAlign !== 'right') throw new Error('White-balance heading is not right-aligned above the right-hand controls');
-if (whiteBalanceControlRow.style.display !== 'flex' || whiteBalanceControlRow.children[0] !== whiteBalanceReset || whiteBalanceControlRow.children[1] !== whiteBalanceContent) throw new Error('Neutral button is not in the left slot with wheel/readouts arranged to its right');
+if (whiteBalanceHeading.textContent !== 'WHITE BALANCE' || whiteBalanceHeading.className !== 'zrl-heading') throw new Error('White-balance heading is missing');
 if (!whiteBalanceReset.title) throw new Error('Base WB button is missing hover guidance');
-if (whiteBalanceControlRow.style.alignItems !== 'center' || whiteBalanceControlRow.style.justifyContent !== 'space-between' || whiteBalanceControlRow.style.height !== '82px' || whiteBalanceReset.style.alignSelf !== 'center' || whiteBalanceReset.style.height !== '30px' || whiteBalanceReset.style.minWidth !== '76px' || whiteBalanceReset.textContent !== 'BASE WB') throw new Error('Neutral WB button is not vertically centered in the shared control row or has an incorrect label/dimension');
-if (emulsionControlRow.children[0] !== emulsionSelect || emulsionControlRow.children[1] !== emulsionTrigger || whiteBalanceControlRow.children[0] !== whiteBalanceReset) throw new Error('Emulsion dropdown and Neutral WB button no longer share the same centered control-row structure');
+if (whiteBalanceReset.textContent !== 'BASE WB') throw new Error('Base WB button label is incorrect');
 if (whiteBalanceWheel.style.borderRadius !== '50%' || whiteBalanceWheel.attributes.role !== 'application') throw new Error('Resolve-style white-balance gain wheel is missing');
-if (whiteBalanceContent.style.display !== 'flex' || whiteBalanceContent.style.justifyContent !== 'flex-end' || whiteBalanceContent.style.alignItems !== 'center' || whiteBalanceContent.style.height !== '82px' || whiteBalanceContent.children[1] !== whiteBalanceReadouts || whiteBalanceContent.style.gap !== '1px' || whiteBalanceContent.style.marginLeft !== 'auto' || whiteBalanceContent.style.flex !== '0 0 auto') throw new Error('White-balance wheel/readout group is not anchored to the right edge with compact spacing');
-if (whiteBalanceReadouts.style.alignItems !== 'flex-end' || whiteBalanceReadouts.style.textAlign !== 'right' || whiteBalanceReadouts.style.flex !== '0 1 auto') throw new Error('White-balance axis labels and numeric values are not right-aligned');
-if (whiteBalancePuck.style.width !== '10px' || whiteBalancePuck.style.height !== '10px' || whiteBalancePuck.style.transform !== 'translate(-50%, -50%)' || !whiteBalancePuck.style.background.includes('radial-gradient')) throw new Error('White-balance cursor is not correctly centered and styled as the smaller graphite-grey puck');
-if (whiteBalanceCenter.style.width !== '15px' || whiteBalanceCenter.style.height !== '15px') throw new Error('Fixed white-balance center reference is not distinct from the movable cursor');
+if (whiteBalancePuck.style.transform !== 'translate(-50%, -50%)') throw new Error('White-balance cursor is not centered');
+if (whiteBalanceCenter.style.width !== '15px' || whiteBalancePuck.style.width !== '10px') throw new Error('Fixed white-balance center reference is not distinct from the movable cursor');
 if (!whiteBalanceTemperatureReadout.children[0].textContent.includes('COOL') || !whiteBalanceTemperatureReadout.children[1].textContent.includes('T +1.00')) throw new Error('Temperature axis label/value are not displayed together beside the wheel');
 if (!whiteBalanceTintReadout.children[0].textContent.includes('MAGENTA') || !whiteBalanceTintReadout.children[1].textContent.includes('TINT +1.00')) throw new Error('Tint axis label/value are not displayed together beside the wheel');
-if (!whiteBalanceFrame.style.background.includes('linear-gradient') || !whiteBalanceInnerRim.style.background.includes('linear-gradient')) throw new Error('White-balance wheel is missing its Apple-style graduated metallic outer and inner rims');
-if (whiteBalanceFrame.style.width !== '82px' || whiteBalanceWheel.style.width !== '74px') throw new Error('White-balance wheel dimensions are incorrect for the compact side-by-side control layout');
-if (whiteBalanceReadouts.style.minWidth !== '0') throw new Error('White-balance readouts reserve unnecessary horizontal space');
 if (emulsionSelect.value !== 'neutral') throw new Error('Emulsion atlas must default to Neutral');
 if (emulsionSelect.children[0].value !== 'neutral') throw new Error('Neutral identity option must be first');
 const emulsionProfileCount = emulsionSelect.children.slice(1).reduce((sum, group) => sum + group.children.length, 0);
@@ -386,26 +338,7 @@ if (emulsionUI.menu.style.display !== 'block') throw new Error('Emulsion menu di
 const menuVelvia = emulsionUI.menuOptions.find((option) => option.value === 'velvia_50');
 menuVelvia.dispatch('click');
 if (node.widgets.find((item) => item.name === 'color_emulsion').value !== 'velvia_50' || emulsionUI.menu.style.display !== 'none') throw new Error('Custom emulsion menu selection did not update the canonical widget and close');
-if (!brandHeader || brandHeader.attributes['aria-label'] !== '@zuanfilm — Retrolab Analog Film Inspired') {
-  throw new Error('Centered RetroLab wordmark is missing its accessible identity label');
-}
-if (brandHeader.children[1].children[0].textContent !== '@zuanfilm' || brandHeader.children[1].children[1].textContent !== 'RETROLAB' || brandHeader.children[1].children[3].textContent !== 'ANALOG FILM INSPIRED') {
-  throw new Error('Centered @zuanfilm RETROLAB brand lockup is missing or out of order');
-}
-if (brandHeader.children[1].children[0].style.fontSize !== '10px') throw new Error('@zuanfilm maker mark was not enlarged');
-if (!brandHeader.children[1].children[1].style.fontFamily.includes('Rockwell') ||
-    !brandHeader.children[1].children[1].style.fontFamily.includes('Bookman Old Style')) {
-  throw new Error('RetroLab wordmark does not use the host-local retro slab-serif font stack');
-}
-if (brandHeader.style.gridTemplateColumns !== 'minmax(12px, 26px) auto minmax(12px, 26px)' ||
-    brandHeader.children.length !== 3 || brandHeader.style.width !== 'auto') {
-  throw new Error('RetroLab wordmark does not use the compact short decorative guide rules');
-}
-if (headerRow.style.display !== 'grid' || headerRow.style.gridTemplateColumns !== 'minmax(0, 1fr) auto minmax(0, 1fr)' ||
-    headerRow.children[0] !== titleGroup || headerRow.children[1] !== brandHeader || headerRow.children[2] !== languageActions) {
-  throw new Error('Preview toolbar does not center the wordmark between Live Preview and locale controls');
-}
-const bottomRoot = bottomWidget.element;
+if (tabButtons[0].attributes['data-active'] !== 'true') throw new Error('Color tab does not mark its changed white balance');
 const leakSection = leakControlsWidget.element;
 const modeRow = leakSection.children[0];
 const positionRow = leakSection.children[1];
@@ -413,17 +346,16 @@ const leakExposureRow = leakSection.children[2];
 const leakSeedRow = leakSection.children[3];
 const leakRadiusRow = leakSection.children[4];
 const leakColorRow = leakSection.children[5];
-const grainSection = bottomRoot.children[0];
-const grainColumn = grainSection.children[1];
-const textureColumn = grainSection.children[2];
-const grainPanel = bottomRoot.children[1];
+const grainSection = grainWidget.element;
+const grainColumn = grainSection.children[0];
+const textureColumn = grainSection.children[1];
 const tonePanel = toneWidget.element;
 const antiAIColumn = tonePanel.children[0];
 const sabattierColumn = tonePanel.children[1];
 const opticalPanel = opticalWidget.element;
 const lightPanel = lightWidget.element;
-const bloomColumn = lightPanel.children[1];
-const halationColumn = lightPanel.children[2];
+const bloomColumn = lightPanel.children[0];
+const halationColumn = lightPanel.children[1];
 const halationColorRow = halationColumn.children[3];
 if (lightPanel.style.gridTemplateColumns !== 'repeat(2, minmax(0, 1fr))') throw new Error('Halation and Bloom are not arranged as a two-column group');
 if (bloomColumn.children[0].textContent !== 'BLOOM' || halationColumn.children[0].textContent !== 'HALATION') throw new Error('Bloom/Halation group headings are missing or in the wrong order');
@@ -458,17 +390,17 @@ if (storage.get('zuanfilm_retrolab.language.v1') !== undefined) {
 languageSelect.value = 'es';
 languageSelect.dispatch('change');
 if (storage.get('zuanfilm_retrolab.language.v1') !== 'es') throw new Error('Language preference was not saved locally');
-if (titleGroup.children[0].textContent !== 'VISTA PREVIA EN VIVO') throw new Error('Spanish Live Preview heading was not applied');
+if (tabButtons[3].textContent !== 'Fuga') throw new Error('Spanish tab labels were not applied');
 if (languageIcon.textContent !== '🌐') throw new Error('Language selector does not use the requested globe icon');
 if (languageIcon.attributes['aria-label'] !== 'Idioma') throw new Error('Globe icon does not retain a translated accessible label');
 if (node.widgets.find((item) => item.name === 'halation_amount').label !== 'Intensidad de halación') throw new Error('Native widget labels were not translated');
 if (node.widgets.find((item) => item.name === 'vignette_amount').label !== 'Intensidad de viñeta') throw new Error('Vignette label was not translated');
 if (node.widgets.find((item) => item.name === 'soft_focus_amount').label !== 'Intensidad de enfoque suave') throw new Error('Soft Focus label was not translated');
-if (emulsionLabel.textContent !== 'EMULSIÓN DE PELÍCULA EN COLOR') throw new Error('Emulsion atlas heading was not translated to Spanish');
-if (emulsionResponseLabel.textContent !== 'RESPUESTA DE EMULSIÓN' || !emulsionResponseInput.title.includes('Escala')) throw new Error('Emulsion Response label or tooltip was not localized to Spanish');
-emulsionResponseInput.value = '2.35';
-emulsionResponseInput.dispatch('input');
-if (node.widgets.find((item) => item.name === 'emulsion_response').value !== 2.35 || emulsionResponseValue.textContent !== '2.35×') throw new Error('Emulsion Response slider did not update its canonical backend widget and readout');
+if (emulsionTrigger.attributes['aria-label'] !== 'EMULSIÓN DE PELÍCULA EN COLOR') throw new Error('Emulsion atlas label was not translated to Spanish');
+if (emulsionStepper.attributes['aria-label'] !== 'RESPUESTA DE EMULSIÓN' || !emulsionStepper.title.includes('Escala')) throw new Error('Emulsion Response label or tooltip was not localized to Spanish');
+for (let i = 0; i < 3; i += 1) emulsionResponsePlus.dispatch('click');
+emulsionResponseMinus.dispatch('click');
+if (node.widgets.find((item) => item.name === 'emulsion_response').value !== 1.1 || emulsionResponseValue.textContent !== '1.10×') throw new Error('Emulsion Response stepper did not update its canonical backend widget and readout');
 if (whiteBalanceHeading.textContent !== 'BALANCE DE BLANCOS') throw new Error('White-balance heading was not translated to Spanish');
 if (whiteBalanceReset.textContent !== 'WB BASE') throw new Error('Neutral WB action was not translated to Spanish');
 if (emulsionSelect.children[0].textContent !== 'Neutral · Sin emulsión') throw new Error('Neutral identity option was not translated');
@@ -493,7 +425,7 @@ if (modeSelect.children[0].textContent !== 'Borde suave') throw new Error('Light
 if (positionSelect.children[0].textContent !== 'Arriba') throw new Error('Light Leak position options were not translated');
 
 // Reset respects the new factory defaults and keeps the current language.
-resetSlot.children[0].dispatch('click');
+resetSlot.children[1].dispatch('click');
 for (const [name, expected] of Object.entries(namesAndDefaults)) {
   const widget = node.widgets.find((item) => item.name === name);
   if (widget.value !== expected) throw new Error(`${name} did not reset: ${widget.value} !== ${expected}`);
@@ -502,19 +434,17 @@ if (leakPicker.value !== '#C2AF8E') throw new Error('Leak Color picker did not s
 if (leakExposureInput.value !== '0' || leakSeedInput.value !== '27' || leakRadiusInput.value !== '1') throw new Error('Light Leak sliders did not synchronize after Reset to Defaults');
 if (halationColorInput.value !== '#FF9959') throw new Error('Halation Color picker did not sync to its default color');
 if (emulsionSelect.value !== 'neutral' || node.widgets.find((item) => item.name === 'color_emulsion').value !== 'neutral') throw new Error('Emulsion atlas Reset to Defaults did not restore Neutral');
-if (node.widgets.find((item) => item.name === 'emulsion_response').value !== 1.0 || emulsionResponseInput.value !== '1' || emulsionResponseValue.textContent !== '1.00×') throw new Error('Emulsion Response Reset to Defaults did not restore its 1.00× baseline');
+if (node.widgets.find((item) => item.name === 'emulsion_response').value !== 1.0 || emulsionResponseValue.textContent !== '1.00×') throw new Error('Emulsion Response Reset to Defaults did not restore its 1.00× baseline');
 if (node.widgets.find((item) => item.name === 'white_balance_temperature').value !== 0 || node.widgets.find((item) => item.name === 'white_balance_tint').value !== 0) throw new Error('Reset to Defaults did not restore neutral white balance');
-if (grainSection.children.length !== 4) throw new Error('The bottom texture group is not arranged as Film Grain, Procedural Texture and a shared blend row');
+if (grainSection.children.length !== 3) throw new Error('The texture group is not arranged as Film Grain, Procedural Texture and a shared blend row');
+if (tabButtons.some((button) => button.attributes['data-active'] === 'true')) throw new Error('Tab change dots remain after Reset to Defaults');
 if (grainSection.style.gridTemplateColumns !== 'repeat(2, minmax(0, 1fr))') throw new Error('Film Grain and Procedural Texture are not arranged as two columns');
 if (textureColumn.children[0].textContent !== 'TEXTURA PROCEDURAL') throw new Error('Procedural Texture group heading is missing');
-const blendPairRow = grainSection.children[3];
+const blendPairRow = grainSection.children[2];
 const grainBlendModeRow = blendPairRow.children[0];
 const grainBlendModeSelect = grainBlendModeRow.children[1];
-if (topPanel.children[1].textContent !== 'Ejecuta el nodo una vez para crear la fuente de vista previa.') throw new Error('Spanish preview status was not applied');
-if (topPanel.children.length !== 3) throw new Error('Standalone wordmark strip was not consolidated into the preview toolbar');
-if (topPanel.children[2].style.height !== '420px') throw new Error('Composition preview was not enlarged');
-if (grainPanel.children[0].textContent !== 'DETALLE DE GRANO Y TEXTURA · RECORTE CENTRAL 240 PX') throw new Error('Spanish grain & texture detail label was not applied');
-if (grainPanel.style.alignItems !== 'center') throw new Error('Grain detail preview is not centered');
+if (previewUI.status.textContent !== 'Ejecuta el nodo una vez para crear la fuente de vista previa.') throw new Error('Spanish preview status was not applied');
+if (previewUI.loupe.title !== 'DETALLE DE GRANO Y TEXTURA · RECORTE CENTRAL 240 PX') throw new Error('Spanish grain & texture detail label was not applied');
 for (const name of ['grain_amount', 'grain_size', 'color_grain']) {
   if (!node.widgets.find((item) => item.name === name).hidden) throw new Error(`${name} native widget should be hidden while its bottom control is visible`);
 }
@@ -539,8 +469,8 @@ if (leakColorRow.style.justifyContent !== 'flex-end' || halationColorRow.style.j
 }
 if (node.widgets.find((item) => item.name === 'grain_size') === undefined) throw new Error('Grain Size widget is missing');
 if (grainColumn.children[2].children[1].min !== '0.1') throw new Error('Fine Grain Size slider does not reach below 0.7');
-const softFocusColumn = opticalPanel.children[1];
-const vignetteColumn = opticalPanel.children[2];
+const softFocusColumn = opticalPanel.children[0];
+const vignetteColumn = opticalPanel.children[1];
 if (softFocusColumn.children[0].textContent !== 'ENFOQUE SUAVE' || vignetteColumn.children[0].textContent !== 'VIÑETA') throw new Error('Optical group headings were not translated');
 const softFocusAmountInput = softFocusColumn.children[1].children[1];
 const vignetteAmountInput = vignetteColumn.children[1].children[1];
@@ -657,18 +587,17 @@ if (node.widgets.find((item) => item.name === 'grain_amount').value !== 2.4) {
 node.onExecuted({ retrolab_preview_id: ['0123456789abcdef0123456789abcdef'] });
 await new Promise((resolve) => setTimeout(resolve, 30));
 if (!requests.some((request) => request.path === '/retrolab/preview')) throw new Error('Preview request was not issued');
-const compositionImage = topPanel.children[2];
-const grainDetailImage = grainPanel.children[1];
+const compositionImage = previewUI.fullImage;
+const beforeImage = previewUI.beforeImage;
+const [splitButton, beforeButton, afterButton] = previewUI.compare.buttons;
 if (!compositionImage.src.startsWith('data:image/png;base64,')) throw new Error('Composition preview PNG was not rendered');
-const compareGroup = titleGroup.children[1];
-const compareState = compareGroup.children[0];
-const compareToggle = compareGroup.children[1];
 const processedPreviewSrc = compositionImage.src;
 const originalPreviewSrc = node._zrlPreviewOriginalSrc;
 if (!originalPreviewSrc || !requests.some((request) => JSON.parse(request.options.body).include_original === true)) throw new Error('Original preview source was not requested/cached');
-if (compareState.textContent !== 'DESPUÉS') throw new Error('Before/After control does not default to After');
-compareToggle.dispatch('click');
-if (compositionImage.src !== originalPreviewSrc || compareState.textContent !== 'ANTES' || compareToggle.attributes['aria-checked'] !== 'true') throw new Error('Before toggle did not show the untouched source image');
+if (splitButton.attributes['aria-pressed'] !== 'true' || beforeImage.src !== originalPreviewSrc || beforeImage.style.visibility !== 'visible' ||
+    beforeImage.style.clipPath !== 'inset(0 50% 0 0)' || previewUI.split.style.display !== 'block') throw new Error('Preview does not default to a centered Before/After split');
+beforeButton.dispatch('click');
+if (beforeImage.style.clipPath !== 'inset(0 0% 0 0)' || beforeButton.attributes['aria-pressed'] !== 'true' || previewUI.split.style.display !== 'none') throw new Error('Before mode did not show the untouched source image');
 const halationBackend = node.widgets.find((item) => item.name === 'halation_amount');
 halationBackend.value = 0.91;
 halationBackend.callback(halationBackend.value, app.canvas, node);
@@ -676,24 +605,23 @@ await new Promise((resolve) => setTimeout(resolve, 230));
 const previewPosts = requests.filter((request) => request.path === '/retrolab/preview' && request.options.method === 'POST');
 const latestPreviewPayload = JSON.parse(previewPosts[previewPosts.length - 1].options.body);
 if (latestPreviewPayload.include_original !== false) throw new Error('A later preview update retransmitted the original PNG');
-if (compositionImage.src !== originalPreviewSrc) throw new Error('A processed-image update replaced the currently selected Before view');
-compareToggle.dispatch('click');
-if (compositionImage.src !== node._zrlPreviewProcessedSrc || compositionImage.src !== processedPreviewSrc || compareState.textContent !== 'DESPUÉS' || compareToggle.attributes['aria-checked'] !== 'false') throw new Error('After toggle did not restore the processed composition');
-if (!grainDetailImage.src.startsWith('data:image/png;base64,')) throw new Error('Grain Detail PNG was not rendered');
-if (topPanel.children[1].textContent.includes('CPU preview')) throw new Error('Removed CPU preview status text is still present');
-if (topPanel.children.some((child) => String(child.textContent).includes('MAX 512 PX'))) throw new Error('Removed MAX 512 PX label is still present');
+if (beforeImage.style.clipPath !== 'inset(0 0% 0 0)') throw new Error('A processed-image update replaced the currently selected Before view');
+afterButton.dispatch('click');
+if (compositionImage.src !== node._zrlPreviewProcessedSrc || compositionImage.src !== processedPreviewSrc || beforeImage.style.clipPath !== 'inset(0 100% 0 0)') throw new Error('After mode did not restore the processed composition');
+if (!previewUI.grainImage.src.startsWith('data:image/png;base64,') || previewUI.loupe.style.display !== 'block') throw new Error('Grain Detail loupe was not rendered');
+if (previewUI.status.textContent.includes('CPU preview')) throw new Error('Removed CPU preview status text is still present');
 
 // Japanese, Russian and German selections are available and update the whole node.
 languageSelect.value = 'ja';
 languageSelect.dispatch('change');
-if (titleGroup.children[0].textContent !== 'ライブプレビュー') throw new Error('Japanese translation did not apply');
+if (tabButtons[1].textContent !== 'ライト') throw new Error('Japanese translation did not apply');
 languageSelect.value = 'ru';
 languageSelect.dispatch('change');
-if (titleGroup.children[0].textContent !== 'ПРЕДПРОСМОТР В РЕАЛЬНОМ ВРЕМЕНИ') throw new Error('Russian translation did not apply');
+if (tabButtons[1].textContent !== 'Свет') throw new Error('Russian translation did not apply');
 if (modeSelect.children[0].textContent !== 'Мягкий край') throw new Error('Russian Light Leak character translation did not apply');
 languageSelect.value = 'de';
 languageSelect.dispatch('change');
-if (titleGroup.children[0].textContent !== 'LIVE-VORSCHAU') throw new Error('German translation did not apply');
+if (tabButtons[1].textContent !== 'Licht' || !afterButton.textContent.trim()) throw new Error('German translation did not apply');
 if (storage.get('zuanfilm_retrolab.language.v1') !== 'de') throw new Error('Latest language selection was not persisted locally');
 if (expectedLanguages.includes('id') || !expectedLanguages.includes('ru')) throw new Error('Removed Indonesian / missing Russian language registration');
 node.size = [420, 600];
@@ -726,21 +654,22 @@ for (const language of expectedLanguages) {
   }
   if (language !== 'en' && whiteBalanceReset.title === englishTooltips.get('base_wb')) throw new Error(`Language ${language} did not localize Base WB hover help`);
   const requiredTexts = [
-    titleGroup.children[0].textContent,
-    titleGroup.children[1].children[0].textContent,
+    ...tabButtons.map((button) => button.textContent),
+    beforeButton.textContent,
+    afterButton.textContent,
+    lightPanel.children[0].children[0].textContent,
     lightPanel.children[1].children[0].textContent,
-    lightPanel.children[2].children[0].textContent,
     tonePanel.children[0].children[0].textContent,
     tonePanel.children[1].children[0].textContent,
     languageIcon.textContent,
-    topPanel.children[1].textContent,
+    previewUI.status.textContent,
     halationColorRow.children[0].textContent,
     leakColorRow.children[0].textContent,
-    resetSlot.children[0].textContent,
+    resetSlot.children[1].title,
+    opticalPanel.children[0].children[0].textContent,
     opticalPanel.children[1].children[0].textContent,
-    opticalPanel.children[2].children[0].textContent,
+    opticalPanel.children[0].children[1].children[0].children[0].textContent,
     opticalPanel.children[1].children[1].children[0].children[0].textContent,
-    opticalPanel.children[2].children[1].children[0].children[0].textContent,
     grainColumn.children[0].textContent,
     textureColumn.children[0].textContent,
     textureColumn.children[1].textContent,
@@ -752,12 +681,12 @@ for (const language of expectedLanguages) {
     blendModeRow.children[0].textContent,
     ...grainBlendModeSelect.children.map((option) => option.textContent),
     ...blendModeSelect.children.map((option) => option.textContent),
-    grainPanel.children[0].textContent,
+    previewUI.loupe.title,
     modeRow.children[0].textContent,
     positionRow.children[0].textContent,
-    emulsionLabel.textContent,
+    emulsionTrigger.attributes['aria-label'],
     emulsionSelect.children[0].textContent,
-    emulsionTrigger.children[0].textContent,
+    emulsionTrigger.children[1].textContent,
     whiteBalanceHeading.textContent,
     whiteBalanceTemperatureReadout.children[0].textContent,
     whiteBalanceTintReadout.children[0].textContent,

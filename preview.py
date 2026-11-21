@@ -36,6 +36,13 @@ _CACHE_MAX_ENTRIES = 6
 _CACHE_TTL_SECONDS = 30 * 60
 _FULL_PREVIEW_LONG_EDGE = 512
 _GRAIN_CROP_SIZE = 240
+# Video previews keep only a uint8 CPU proxy of up to 240 sampled frames, so a
+# 1080p clip costs roughly 240 x 384 x 216 x 3 bytes (~60 MB) regardless of length.
+_VIDEO_CACHE: OrderedDict[str, dict[str, Any]] = OrderedDict()
+_VIDEO_CACHE_MAX_ENTRIES = 2
+_VIDEO_PREVIEW_LONG_EDGE = 384
+_VIDEO_PREVIEW_MAX_FRAMES = 240
+_VIDEO_FRAMES_PER_REQUEST = 8
 
 # Public node controls and safe limits. Keeping this table here ensures the
 # preview endpoint clamps values independently of frontend-side validation.
@@ -203,6 +210,55 @@ def discard_preview_cache(token: str) -> None:
         _PREVIEW_CACHE.pop(str(token), None)
 
 
+def create_video_preview_cache(images: torch.Tensor) -> str:
+    """Cache a small uint8 proxy of the clip for scrubbing and playback.
+
+    Frames are downsampled one at a time, so peak extra memory is a single
+    float proxy frame on the source device plus the compact uint8 CPU stack.
+    """
+    if not isinstance(images, torch.Tensor) or images.ndim != 4 or images.shape[-1] < 3:
+        raise ValueError("Video Preview requires an IMAGE tensor shaped (B,H,W,C)")
+    total = int(images.shape[0])
+    if total < 1:
+        raise ValueError("Video Preview cannot cache an empty image batch")
+
+    full_height, full_width = int(images.shape[1]), int(images.shape[2])
+    scale = min(1.0, _VIDEO_PREVIEW_LONG_EDGE / float(max(full_height, full_width)))
+    preview_h = max(1, int(round(full_height * scale)))
+    preview_w = max(1, int(round(full_width * scale)))
+    stride = max(1, math.ceil(total / _VIDEO_PREVIEW_MAX_FRAMES))
+    source_indices = list(range(0, total, stride))
+
+    frames = torch.empty((len(source_indices), preview_h, preview_w, 3), dtype=torch.uint8)
+    for slot, source_index in enumerate(source_indices):
+        frame = images[source_index, ..., :3].detach().to(dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
+        if (preview_h, preview_w) != (full_height, full_width):
+            frame = F.interpolate(frame, size=(preview_h, preview_w), mode="area")
+        frames[slot].copy_((frame[0].permute(1, 2, 0).clamp(0.0, 1.0) * 255.0).round().to(device="cpu", dtype=torch.uint8))
+
+    token = uuid.uuid4().hex
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        expired = [key for key, value in _VIDEO_CACHE.items() if now - value["created"] > _CACHE_TTL_SECONDS]
+        for key in expired:
+            _VIDEO_CACHE.pop(key, None)
+        _VIDEO_CACHE[token] = {
+            "created": now,
+            "frames": frames,
+            "source_indices": source_indices,
+            "source_frame_count": total,
+            "dimensions": (full_height, full_width),
+        }
+        while len(_VIDEO_CACHE) > _VIDEO_CACHE_MAX_ENTRIES:
+            _VIDEO_CACHE.popitem(last=False)
+    return token
+
+
+def discard_video_preview_cache(token: str) -> None:
+    with _CACHE_LOCK:
+        _VIDEO_CACHE.pop(str(token), None)
+
+
 def _get_preview_entry(token: str) -> dict[str, Any] | None:
     now = time.monotonic()
     with _CACHE_LOCK:
@@ -225,6 +281,69 @@ def _encode_png(rgb: torch.Tensor) -> str:
     buffer = io.BytesIO()
     Image.fromarray(array, mode="RGB").save(buffer, format="PNG", optimize=False)
     return base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
+def _encode_jpeg(rgb_uint8: torch.Tensor) -> str:
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.fromarray(rgb_uint8.contiguous().numpy(), mode="RGB").save(buffer, format="JPEG", quality=88)
+    return base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
+@torch.no_grad()
+def render_video_preview_frames(
+    token: str,
+    payload: dict[str, Any] | None,
+    frame_indices: list[Any],
+    *,
+    include_original: bool = False,
+) -> dict[str, Any]:
+    """Render a few proxy frames of a cached clip with the full finishing chain.
+
+    Grain and texture are included so the preview shows their frame-to-frame
+    motion; each frame keeps its source batch index for deterministic grain.
+    """
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        entry = _VIDEO_CACHE.get(str(token))
+        if entry is not None and now - entry["created"] > _CACHE_TTL_SECONDS:
+            _VIDEO_CACHE.pop(str(token), None)
+            entry = None
+    if entry is None:
+        raise KeyError("Video preview expired. Queue Zuanfilm Retrolab Video once to refresh its preview source.")
+
+    settings = normalize_preview_settings(payload)
+    frames = entry["frames"]
+    count = int(frames.shape[0])
+    requested = []
+    for value in frame_indices if isinstance(frame_indices, list) else []:
+        try:
+            index = int(value)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if 0 <= index < count and index not in requested:
+            requested.append(index)
+        if len(requested) >= _VIDEO_FRAMES_PER_REQUEST:
+            break
+
+    rendered = []
+    for index in requested:
+        source = frames[index]
+        processed = process_single_image(source.to(torch.float32) / 255.0, settings, frame_index=entry["source_indices"][index])
+        item = {"index": index, "jpg": _encode_jpeg((processed.clamp(0.0, 1.0) * 255.0).round().to(torch.uint8))}
+        if include_original:
+            item["original_jpg"] = _encode_jpeg(source)
+        rendered.append(item)
+
+    return {
+        "frames": rendered,
+        "frame_count": count,
+        "frame_stride": entry["source_indices"][1] if count > 1 else 1,
+        "source_frame_count": entry["source_frame_count"],
+        "size": [int(frames.shape[2]), int(frames.shape[1])],
+        "source_size": [int(entry["dimensions"][1]), int(entry["dimensions"][0])],
+    }
 
 
 @torch.no_grad()
@@ -314,6 +433,30 @@ def register_preview_routes() -> bool:
         async def retrolab_discard_preview(request):
             token = request.match_info.get("token", "")
             discard_preview_cache(token)
+            return web.json_response({"ok": True})
+
+        @prompt_server.routes.post("/retrolab/video_preview")
+        async def retrolab_render_video_preview(request):
+            try:
+                payload = await request.json()
+                if not isinstance(payload, dict):
+                    return web.json_response({"error": "Invalid video preview request."}, status=400)
+                token = payload.get("token", "")
+                if not isinstance(token, str) or len(token) != 32:
+                    return web.json_response({"error": "Invalid preview token."}, status=400)
+                result = await asyncio.to_thread(
+                    render_video_preview_frames, token, payload.get("settings", {}), payload.get("frames", []),
+                    include_original=payload.get("include_original") is True,
+                )
+                return web.json_response(result)
+            except KeyError as exc:
+                return web.json_response({"error": str(exc).strip("'")}, status=404)
+            except Exception as exc:
+                return web.json_response({"error": f"Video preview render failed: {type(exc).__name__}: {exc}"}, status=500)
+
+        @prompt_server.routes.delete("/retrolab/video_preview/{token}")
+        async def retrolab_discard_video_preview(request):
+            discard_video_preview_cache(request.match_info.get("token", ""))
             return web.json_response({"ok": True})
 
         prompt_server._retrolab_preview_routes_registered = True

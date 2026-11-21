@@ -11,10 +11,14 @@ import torch
 from zuanfilm_retrolab_test_package.core.grain import _normal_field, apply_film_grain
 from zuanfilm_retrolab_test_package.preview import (
     _PREVIEW_CACHE,
+    _VIDEO_CACHE,
     create_preview_cache,
+    create_video_preview_cache,
+    discard_video_preview_cache,
     discard_preview_cache,
     normalize_preview_settings,
     render_cached_preview,
+    render_video_preview_frames,
     register_preview_routes,
 )
 
@@ -397,6 +401,30 @@ class LivePreviewTests(unittest.TestCase):
             self.assertFalse(register_preview_routes())
         self.assertIn(("POST", "/retrolab/preview"), FakePromptServer.instance.routes.paths)
         self.assertIn(("DELETE", "/retrolab/preview/{token}"), FakePromptServer.instance.routes.paths)
+        self.assertIn(("POST", "/retrolab/video_preview"), FakePromptServer.instance.routes.paths)
+        self.assertIn(("DELETE", "/retrolab/video_preview/{token}"), FakePromptServer.instance.routes.paths)
+
+    def test_video_preview_keeps_compact_uint8_proxy_and_samples_long_clips(self):
+        clip = self.image.expand(500, -1, -1, -1)
+        token = create_video_preview_cache(clip)
+        try:
+            frames = _VIDEO_CACHE[token]["frames"]
+            self.assertEqual(frames.dtype, torch.uint8)
+            self.assertEqual(tuple(frames.shape), (167, 307, 384, 3))
+            result = render_video_preview_frames(token, {"grain_amount": 1.0, "vignette_amount": 0.5}, [0, 3, 3, 999, "x"], include_original=True)
+            self.assertEqual([frame["index"] for frame in result["frames"]], [0, 3])
+            self.assertEqual(result["frame_count"], 167)
+            self.assertEqual(result["frame_stride"], 3)
+            self.assertEqual(result["source_frame_count"], 500)
+            self.assertEqual(result["source_size"], [800, 640])
+            self.assertTrue(base64.b64decode(result["frames"][0]["jpg"]).startswith(b"\xff\xd8"))
+            self.assertIn("original_jpg", result["frames"][1])
+            # Grain follows the source batch index, so sampled frames differ.
+            self.assertNotEqual(result["frames"][0]["jpg"], result["frames"][1]["jpg"])
+        finally:
+            discard_video_preview_cache(token)
+        with self.assertRaises(KeyError):
+            render_video_preview_frames(token, {}, [0])
 
     def test_native_crop_grain_is_spatially_aligned_to_full_frame(self):
         settings = dict(amount=0.8, grain_size=1.4, color_grain=0.4, seed=55)

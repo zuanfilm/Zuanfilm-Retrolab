@@ -14,7 +14,8 @@ photograph, creative controls and finished result.*
 ## At a glance
 
 - **Twelve finishing stages**, including a 50-look Color Film Emulsions Atlas, deterministic procedural texture and Film Grain, plus independent White Balance, Anti-AI and Exposure corrections in one creative node.
-- **Live Preview** with Before / After comparison, a clean composition view, and a native-resolution **Grain & Texture Detail** center crop.
+- **Live Preview** that fills the node, with a draggable Before / After split and a native-resolution **Grain & Texture Detail** loupe. Controls are grouped into six tabs (Color, Light, Tone, Leak, Optics, Grain) so the node stays compact.
+- **Zuanfilm Retrolab Video** node for frame batches: the same controls with a live player (play/pause, frame scrubber, 8–30 fps). The preview keeps only a 384 px uint8 proxy of up to 240 sampled frames on the CPU, and renders the frame under the playhead first after every change.
 - **Ten interface languages:** English, Simplified Chinese, Japanese, Spanish, Portuguese, French, Russian, German, Hindi and Arabic.
 - **Independent deterministic seeds** for procedural texture, Film Grain and Light Leak geometry.
 - **Automatic hardware adaptation:** sufficiently large workloads can use available NVIDIA CUDA acceleration without any device controls in the creative interface; CPU-only PyTorch remains supported.
@@ -62,7 +63,7 @@ All finishing stages are independently adjustable. Anti-AI, Exposure and Procedu
 
 ## Color Film Emulsions Atlas
 
-Directly below Live Preview, a compact two-column strip places the **Color Film Emulsion** selector in the left half and the **White Balance** gain wheel in the right half. The selector contains **50 creative film looks plus Neutral**, organized into four families. Its constrained half-width menu leaves the other half of the row available for color correction and keeps the Live Preview from being covered by a full-node-width list:
+The **Color Film Emulsion** selector sits directly below Live Preview, beside the Emulsion Response stepper. It contains **50 creative film looks plus Neutral**, organized into four families:
 
 | Family | Profiles | Creative references |
 |---|---:|---|
@@ -79,7 +80,7 @@ The atlas is intended to provide accessible, recognizable starting points for cr
 
 ### Emulsion Response
 
-The **Emulsion Response** slider controls how strongly the selected film profile expresses its complete tonal and color signature. It ranges from **0.50× to 3.00×**, with **1.00×** as the default. At 1.00× the original profile is preserved exactly; lower values soften its deviation from the image entering the emulsion stage, while higher values amplify it. The response is applied around the stage input in linear RGB, rather than acting as a global saturation or contrast adjustment. **Neutral** remains an exact identity bypass regardless of the slider value. Emulsion Response does not change grain or procedural texture, and the Grain & Texture Detail preview remains independent of the emulsion processing stage. Existing workflows receive the 1.00× default, preserving their previous appearance.
+The **Emulsion Response** stepper (−/+ in 0.05 steps; double-click the value to return to 1.00×) controls how strongly the selected film profile expresses its complete tonal and color signature. It ranges from **0.50× to 3.00×**, with **1.00×** as the default. At 1.00× the original profile is preserved exactly; lower values soften its deviation from the image entering the emulsion stage, while higher values amplify it. The response is applied around the stage input in linear RGB, rather than acting as a global saturation or contrast adjustment. **Neutral** remains an exact identity bypass regardless of the slider value. Emulsion Response does not change grain or procedural texture, and the Grain & Texture Detail preview remains independent of the emulsion processing stage. Existing workflows receive the 1.00× default, preserving their previous appearance.
 
 ### Atlas entries
 
@@ -102,7 +103,7 @@ Kodak Portra 160 · Kodak Portra 400 · Kodak Portra 800 · Kodak Ektar 100 · K
 
 ## White Balance gain wheel
 
-The right half of the Emulsions row contains a Resolve-inspired two-axis gain wheel. Drag the puck inside the circle or use the arrow keys:
+The **Color** tab contains a Resolve-inspired two-axis gain wheel. Drag the puck inside the circle or use the arrow keys:
 
 | Axis | Negative direction | Positive direction | Range |
 |---|---|---|---:|
@@ -244,12 +245,12 @@ These controls are presented together as a compact two-column optical-finishing 
 
 ## Live Preview
 
-After the first queued execution creates a preview source, the Live Preview appears above the controls. A compact **Before / After** switch beside the Live Preview heading compares the untouched input against the current processed composition. The original comparison image is transferred once per preview token and retained in browser memory; slider changes update the processed image without retransmitting the original. The comparison switch is a frontend-only control and adds no ComfyUI workflow input. The initial queue is required to create the preview source; subsequent control adjustments refresh the previews without rerunning the workflow.
+After the first queued execution creates a preview source, the Live Preview appears at the top of the node and takes all spare node height; the control panels keep a fixed height, so resizing the node only grows the picture. The **Split / Before / After** switch on the preview compares the untouched input against the current processed composition; in Split mode, drag across the image to move the divider. The original comparison image is transferred once per preview token and retained in browser memory; slider changes update the processed image without retransmitting the original. The comparison switch is a frontend-only control and adds no ComfyUI workflow input. The initial queue is required to create the preview source; subsequent control adjustments refresh the previews without rerunning the workflow.
 
 The panel provides two complementary inspection views:
 
 - **Composition** — a reduced preview of the photographic finish with Film Grain bypassed, so downscaling does not exaggerate grain size.
-- **Grain & Texture Detail · Center Crop 240 px** — a native-resolution center crop up to 240 × 240 px, processed with Procedural Texture followed by Film Grain so both texture layers can be inspected at source scale without downscaling.
+- **Grain & Texture Detail · Center Crop 240 px** — a loupe in the preview's lower-right corner (hover to enlarge) showing a native-resolution center crop up to 240 × 240 px, processed with Procedural Texture followed by Film Grain so both texture layers can be inspected at source scale without downscaling.
 
 ```mermaid
 flowchart TD
@@ -278,7 +279,7 @@ The preview source is created during node execution. Queue the node again when t
 
 ## Interface and localization
 
-The node includes a half-width Color Film Emulsion selector and adjacent White Balance gain wheel below Live Preview. The grouped emulsion menu is a viewport-level popup that opens below its trigger, keeping the preview unobscured while the profile list is browsed. Native color pickers are provided for Halation Color and Leak Color, alongside Reset to Defaults, translated Light Leak Mode and Leak Position selectors, descriptive hover guidance, and a globe-icon language selector. Parameter hover descriptions are localized in all ten languages. Procedural Texture and Film Grain each expose the shared twelve-mode blend family; the paired selectors sit together beneath their respective texture controls. New nodes receive a one-time zoom-aware initial width after construction, targeting a comfortable visible presentation while bounding the initial graph-space width; canvas zoom remains under LiteGraph control after creation, and manual resizing plus saved workflow dimensions remain authoritative without an enforced minimum.
+Below Live Preview, the Color Film Emulsion selector stays visible and six tabs show one control group at a time; a dot marks each tab with non-default settings, and the selected tab is saved with the workflow. The grouped emulsion menu is a viewport-level popup that opens below its trigger, keeping the preview unobscured while the profile list is browsed. Native color pickers are provided for Halation Color and Leak Color, alongside Reset to Defaults (↺) and the globe-icon language selector on the preview, translated Light Leak Mode and Leak Position selectors, and descriptive hover guidance. Parameter hover descriptions are localized in all ten languages. Procedural Texture and Film Grain each expose the shared twelve-mode blend family; the paired selectors sit together beneath their respective texture controls. New nodes receive a one-time zoom-aware initial width after construction, targeting a comfortable visible presentation while bounding the initial graph-space width; canvas zoom remains under LiteGraph control after creation, and manual resizing plus saved workflow dimensions remain authoritative without an enforced minimum.
 
 Supported languages, in selector order:
 

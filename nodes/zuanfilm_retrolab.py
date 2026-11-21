@@ -7,7 +7,7 @@ from ..core.emulsions import EMULSION_CHOICES, normalize_emulsion_id, normalize_
 from ..core.light_leak import LEAK_MODES, POSITIONS, normalize_hex_color
 from ..core.pipeline import RetroLabSettings, process_batch_with_report
 from ..core.noise_texture import NOISE_TEXTURES, NOISE_BLEND_MODES, normalize_noise_texture
-from ..preview import create_preview_cache, register_preview_routes
+from ..preview import create_preview_cache, create_video_preview_cache, register_preview_routes
 
 
 class ZuanfilmRetroLab:
@@ -154,6 +154,9 @@ class ZuanfilmRetroLab:
             emulsion_response=normalize_emulsion_response(emulsion_response),
         )
         output, report = process_batch_with_report(image, settings)
+        return self._with_preview(image, output, report)
+
+    def _with_preview(self, image, output, report):
         try:
             # Retry route registration at execution time in case the ComfyUI
             # PromptServer was created after custom-node import.
@@ -162,4 +165,16 @@ class ZuanfilmRetroLab:
             return {"ui": {"retrolab_preview_id": [preview_token]}, "result": (output, report)}
         except Exception:
             # Preview failure must never break the actual image-processing node.
+            return (output, report)
+
+
+class ZuanfilmRetroLabVideo(ZuanfilmRetroLab):
+    """Retrolab finishing for video frame batches, with a scrubbable live player."""
+
+    def _with_preview(self, image, output, report):
+        try:
+            register_preview_routes()
+            preview_token = create_video_preview_cache(image)
+            return {"ui": {"retrolab_video_preview_id": [preview_token]}, "result": (output, report)}
+        except Exception:
             return (output, report)

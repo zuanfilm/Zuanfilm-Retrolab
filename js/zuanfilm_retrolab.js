@@ -2,6 +2,81 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 const NODE_NAME = "ZuanfilmRetroLab";
+const DARKROOM_STYLE = `
+.zrl-dr { --zrl-ac: #E7B56A; --zrl-card: #2E2B28; --zrl-card-hi: #3A3631; --zrl-line: rgba(255,240,220,0.09); --zrl-text: #ECE5DA; --zrl-muted: #9C9285;
+    color: var(--zrl-text); font-family: Inter, "Segoe UI", system-ui, sans-serif; box-sizing: border-box; }
+.zrl-dr[hidden] { display: none !important; }
+.dom-widget > .zrl-dr:not(.zrl-preview) { height: auto !important; }
+.zrl-panel { padding: 6px 6px 8px !important; column-gap: 18px !important; row-gap: 8px !important; }
+.zrl-panel > div { border: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+.zrl-heading { font-size: 10px !important; font-weight: 600 !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: var(--zrl-muted) !important; opacity: 1 !important; }
+.zrl-dr input[type=range] { -webkit-appearance: none; appearance: none; height: 6px !important; margin: 0; border: 0 !important; border-radius: 999px !important; outline: none; cursor: pointer;
+    background: linear-gradient(to right, var(--zrl-ac) var(--zrl-p, 0%), #403B35 var(--zrl-p, 0%)) !important; }
+.zrl-dr input[type=range]::-webkit-slider-runnable-track { height: 6px; background: transparent; border-radius: 999px; }
+.zrl-dr input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -4px; border: 0; border-radius: 50%; background: #F4EDE2; box-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.zrl-dr input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: #F4EDE2; }
+.zrl-dr select { height: 28px !important; padding: 0 8px !important; border: 1px solid var(--zrl-line) !important; border-radius: 8px !important; background: var(--zrl-card) !important; color: var(--zrl-text) !important; font-size: 11px !important; }
+.zrl-dr button { border: 1px solid var(--zrl-line) !important; border-radius: 8px !important; background: var(--zrl-card) !important; color: var(--zrl-text) !important; cursor: pointer; }
+.zrl-dr input[type=color] { width: 26px !important; height: 26px !important; padding: 0 !important; border: 1px solid var(--zrl-line) !important; border-radius: 7px !important; background: none !important; }
+.zrl-dr input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+.zrl-dr input[type=color]::-webkit-color-swatch { border: 0; border-radius: 5px; }
+.zrl-preview { display: flex; flex-direction: column; gap: 6px; width: 100%; height: 100%; padding: 2px 0 0; }
+.zrl-card { position: relative; flex: 1 1 auto; min-height: 0; border-radius: 10px; overflow: hidden; background: #0E0E0D; }
+.zrl-card img.zrl-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+.zrl-split { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--zrl-ac); pointer-events: none; }
+.zrl-split::after { content: ""; position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid var(--zrl-ac); border-radius: 50%; background: rgba(20,18,15,0.55); transform: translate(-50%, -50%); }
+.zrl-ov { position: absolute; display: flex; gap: 6px; align-items: center; z-index: 1; }
+.zrl-dr .zrl-glass { background: rgba(18,16,14,0.62) !important; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 999px !important; color: var(--zrl-text) !important; }
+.zrl-seg { display: inline-flex; padding: 2px; }
+.zrl-dr .zrl-seg button { border: 0 !important; background: transparent !important; color: var(--zrl-muted) !important; font-size: 10px; letter-spacing: 0.04em; padding: 3px 9px; border-radius: 999px !important; }
+.zrl-dr .zrl-seg button[aria-pressed=true] { background: var(--zrl-ac) !important; color: #1C1712 !important; font-weight: 600; }
+.zrl-icon { position: relative; width: 26px; height: 26px; display: grid; place-items: center; padding: 0 !important; font-size: 13px; line-height: 1; }
+.zrl-icon select { position: absolute; inset: 0; width: 100%; height: 100% !important; opacity: 0; cursor: pointer; }
+.zrl-status { font-size: 10.5px !important; padding: 3px 9px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zrl-loupe { width: 84px; height: 84px; border-radius: 9px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 14px rgba(0,0,0,0.5); transition: width 0.15s ease, height 0.15s ease; }
+.zrl-loupe:hover { width: 200px; height: 200px; }
+.zrl-loupe img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.zrl-emulsion { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+.zrl-dr .zrl-trigger { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 10px; border-radius: 10px !important; font-size: 12px; text-align: left; }
+.zrl-trigger-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zrl-swatch { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(#E8A45C, #C9614B, #6F8FA8, #E8D39A, #E8A45C); }
+.zrl-swatch[data-neutral=true] { background: #5A554E; }
+.zrl-stepper { display: flex; align-items: center; height: 34px; border-radius: 10px; background: rgba(231,181,106,0.16); }
+.zrl-dr .zrl-stepper button { width: 26px; height: 100%; border: 0 !important; background: transparent !important; font-size: 15px; }
+.zrl-stepper span { min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; font-size: 12px; }
+.zrl-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; padding: 3px; border-radius: 10px; background: var(--zrl-card); }
+.zrl-dr.zrl-tabs button { position: relative; border: 0 !important; background: transparent !important; color: var(--zrl-muted) !important; font-size: 11.5px; padding: 6px 0; border-radius: 7px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zrl-dr.zrl-tabs button[aria-selected=true] { background: var(--zrl-card-hi) !important; color: var(--zrl-text) !important; }
+.zrl-tabs button[data-active=true]::after { content: ""; position: absolute; top: 4px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--zrl-ac); }
+.zrl-menu { border-radius: 10px !important; border: 1px solid var(--zrl-line) !important; background: #1E1C1A !important; }
+`;
+let darkroomStyleInstalled = false;
+// Control groups shown one at a time beneath the preview. The widget lists
+// drive the "changed" dot on each tab.
+const CONTROL_TABS = Object.freeze([
+    { id: "color", widgets: ["white_balance_temperature", "white_balance_tint"] },
+    { id: "light", widgets: ["bloom_amount", "bloom_threshold", "bloom_radius", "halation_amount", "ring_radius", "halation_color"] },
+    { id: "tone", widgets: ["anti_ai", "exposure", "solarization", "highlight_confinement", "mackie_lines"] },
+    { id: "leak", widgets: ["leak_mode", "leak_position", "leak_exposure", "leak_seed", "leak_color", "leak_radius"] },
+    { id: "optics", widgets: ["soft_focus_amount", "soft_focus_radius", "vignette_amount", "vignette_feather"] },
+    { id: "grain", widgets: ["grain_amount", "grain_size", "color_grain", "grain_blend_mode", "noise_texture", "noise_amount", "noise_seed", "noise_scale", "noise_blend_mode"] },
+]);
+const TAB_LABELS = Object.freeze({
+    en: { color: "Color", light: "Light", tone: "Tone", leak: "Leak", optics: "Optics", grain: "Grain" },
+    zh: { color: "色彩", light: "光效", tone: "影调", leak: "漏光", optics: "光学", grain: "颗粒" },
+    ja: { color: "カラー", light: "ライト", tone: "トーン", leak: "光漏れ", optics: "光学", grain: "粒子" },
+    es: { color: "Color", light: "Luz", tone: "Tono", leak: "Fuga", optics: "Óptica", grain: "Grano" },
+    pt: { color: "Cor", light: "Luz", tone: "Tom", leak: "Vazamento", optics: "Óptica", grain: "Grão" },
+    fr: { color: "Couleur", light: "Lumière", tone: "Tonalité", leak: "Fuite", optics: "Optique", grain: "Grain" },
+    ru: { color: "Цвет", light: "Свет", tone: "Тон", leak: "Засвет", optics: "Оптика", grain: "Зерно" },
+    de: { color: "Farbe", light: "Licht", tone: "Ton", leak: "Lichtleck", optics: "Optik", grain: "Korn" },
+    hi: { color: "रंग", light: "प्रकाश", tone: "टोन", leak: "लीक", optics: "ऑप्टिक्स", grain: "ग्रेन" },
+    ar: { color: "اللون", light: "الضوء", tone: "النغمة", leak: "التسرب", optics: "البصريات", grain: "الحبيبات" },
+});
+const VIDEO_NODE_NAME = "ZuanfilmRetroLabVideo";
+const VIDEO_PREVIEW_ENDPOINT = "/retrolab/video_preview";
+const VIDEO_FPS_OPTIONS = Object.freeze([8, 12, 16, 24, 25, 30]);
+const VIDEO_FRAMES_PER_REQUEST = 4;
 const DEFAULT_COLOR = "#C2AF8E";
 const DEFAULT_HALATION_COLOR = "#FF9959";
 const LANGUAGE_STORAGE_KEY = "zuanfilm_retrolab.language.v1";
@@ -517,7 +592,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'MAGENTA',
         wbReset: 'Reset WB',
         wbTemp: 'TEMP',
-        wbTint: 'TINT',  strengthLabel: 'Strength', noiseScale: 'Texture Scale', language: "Language", livePreview: "LIVE PREVIEW",
+        wbTint: 'TINT',  strengthLabel: 'Strength', noiseScale: 'Texture Scale', language: "Language",
         before: "BEFORE", after: "AFTER", halationGroup: "HALATION", bloomGroup: "BLOOM", compareTooltip: "Toggle between original and processed image",
         previewQueue: "Queue the node once to create a preview source.",
         previewUpdating: "Updating preview…", previewUnavailable: "Preview unavailable",
@@ -547,7 +622,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: '品红',
         wbReset: '重置白平衡',
         wbTemp: '色温',
-        wbTint: '色调', strengthLabel: '强度', noiseScale: '纹理尺寸', language: "语言", livePreview: "实时预览",
+        wbTint: '色调', strengthLabel: '强度', noiseScale: '纹理尺寸', language: "语言",
         before: "处理前", after: "处理后", halationGroup: "晕光", bloomGroup: "辉光", compareTooltip: "切换原图与处理后图像",
         previewQueue: "运行一次节点以创建预览源。", previewUpdating: "正在更新预览…",
         previewUnavailable: "预览不可用", source: "原图", grainDetail: "颗粒与纹理细节 · 中心裁切 240 像素", filmGrain: "胶片颗粒", antiAIGroup: "反 AI 校正", sabattierGroup: "萨巴蒂效应", proceduralTexture: "程序纹理", noiseTextureLabel: "噪声纹理", noiseAmount: "噪声强度", noiseSeed: "噪声种子", noiseTextures: {'Gaussian': '高斯', 'Value fBm': '值噪声 fBm', 'Gradient fBm': '梯度噪声 fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': '脊状 fBm', 'Worley Microcells': 'Worley 微单元', 'Domain Warp': '域扭曲', 'Silver Halide Clumps': '卤化银颗粒团', 'Emulsion Mottle': '乳剂斑驳', 'Film Scratches': '胶片划痕', 'Dust & Fibers': '灰尘与纤维', 'Paper Foxing': '相纸霉斑'}, softFocus: "柔焦", vignette: "暗角",
@@ -573,7 +648,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'मैजेंटा',
         wbReset: 'WB रीसेट करें',
         wbTemp: 'ताप',
-        wbTint: 'टिंट', strengthLabel: 'ताकत', noiseScale: 'टेक्सचर स्केल', language: "भाषा", livePreview: "लाइव पूर्वावलोकन",
+        wbTint: 'टिंट', strengthLabel: 'ताकत', noiseScale: 'टेक्सचर स्केल', language: "भाषा",
         before: "पहले", after: "बाद", halationGroup: "हेलो", bloomGroup: "ब्लूम", compareTooltip: "मूल और संसाधित छवि के बीच बदलें",
         previewQueue: "पूर्वावलोकन स्रोत बनाने के लिए नोड को एक बार चलाएँ।", previewUpdating: "पूर्वावलोकन अपडेट हो रहा है…",
         previewUnavailable: "पूर्वावलोकन उपलब्ध नहीं है", source: "स्रोत", grainDetail: "ग्रेन एवं टेक्सचर विवरण · केंद्र क्रॉप 240 PX", filmGrain: "फिल्म ग्रेन", antiAIGroup: "एंटी-AI", sabattierGroup: "सबैटियर", proceduralTexture: "प्रोसीजरल टेक्सचर", noiseTextureLabel: "नॉइज़ टेक्सचर", noiseAmount: "नॉइज़ मात्रा", noiseSeed: "नॉइज़ सीड", noiseTextures: {'Gaussian': 'गॉसियन', 'Value fBm': 'वैल्यू fBm', 'Gradient fBm': 'ग्रेडिएंट fBm', 'Simplex fBm': 'सिंप्लेक्स fBm', 'Ridged fBm': 'रिज्ड fBm', 'Worley Microcells': 'वॉर्ली माइक्रोसेल', 'Domain Warp': 'डोमेन वॉर्प', 'Silver Halide Clumps': 'सिल्वर हैलाइड गुच्छे', 'Emulsion Mottle': 'इमल्शन मॉटल', 'Film Scratches': 'फिल्म की खरोंचें', 'Dust & Fibers': 'धूल और रेशे', 'Paper Foxing': 'कागज़ के पुराने धब्बे'}, softFocus: "सॉफ्ट फोकस", vignette: "विग्नेट",
@@ -600,7 +675,7 @@ const TRANSLATIONS = Object.freeze({
         wbReset: 'Restablecer WB',
         wbTemp: 'TEMP.',
         wbTint: 'TINTE',
-        strengthLabel: 'Intensidad', noiseScale: 'Escala de textura', language: "Idioma", livePreview: "VISTA PREVIA EN VIVO",
+        strengthLabel: 'Intensidad', noiseScale: 'Escala de textura', language: "Idioma",
         before: "ANTES", after: "DESPUÉS", halationGroup: "HALACIÓN", bloomGroup: "BLOOM", compareTooltip: "Alternar entre imagen original y procesada",
         previewQueue: "Ejecuta el nodo una vez para crear la fuente de vista previa.", previewUpdating: "Actualizando vista previa…",
         previewUnavailable: "Vista previa no disponible", source: "Origen", grainDetail: "DETALLE DE GRANO Y TEXTURA · RECORTE CENTRAL 240 PX", filmGrain: "GRANO DE PELÍCULA", antiAIGroup: "ANTI-IA", sabattierGroup: "SABATTIER", proceduralTexture: "TEXTURA PROCEDURAL", noiseTextureLabel: "Textura de ruido", noiseAmount: "Cantidad de ruido", noiseSeed: "Semilla de ruido", noiseTextures: {'Gaussian': 'Gaussiano', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Microceldas Worley', 'Domain Warp': 'Distorsión de dominio', 'Silver Halide Clumps': 'Grumos de haluro de plata', 'Emulsion Mottle': 'Moteado de emulsión', 'Film Scratches': 'Rayas de película', 'Dust & Fibers': 'Polvo y fibras', 'Paper Foxing': 'Manchas de papel'}, softFocus: "ENFOQUE SUAVE", vignette: "VIÑETA",
@@ -626,7 +701,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'أرجواني',
         wbReset: 'إعادة ضبط توازن الأبيض',
         wbTemp: 'حرارة',
-        wbTint: 'صبغة', strengthLabel: 'الشدة', noiseScale: 'مقياس النسيج', language: "اللغة", livePreview: "معاينة مباشرة",
+        wbTint: 'صبغة', strengthLabel: 'الشدة', noiseScale: 'مقياس النسيج', language: "اللغة",
         before: "قبل", after: "بعد", halationGroup: "الهالة", bloomGroup: "التوهج", compareTooltip: "التبديل بين الصورة الأصلية والمعالجة",
         previewQueue: "شغّل العقدة مرة واحدة لإنشاء مصدر للمعاينة.", previewUpdating: "جارٍ تحديث المعاينة…",
         previewUnavailable: "المعاينة غير متاحة", source: "المصدر", grainDetail: "تفاصيل الحبيبات والملمس · قص مركزي 240 بكسل", filmGrain: "حبيبات الفيلم", antiAIGroup: "مضاد للذكاء الاصطناعي", sabattierGroup: "ساباتييه", proceduralTexture: "نسيج إجرائي", noiseTextureLabel: "نسيج الضوضاء", noiseAmount: "مقدار الضوضاء", noiseSeed: "بذرة الضوضاء", noiseTextures: {'Gaussian': 'غاوسي', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'خلايا Worley دقيقة', 'Domain Warp': 'تشويه المجال', 'Silver Halide Clumps': 'تكتلات هاليد الفضة', 'Emulsion Mottle': 'تبقع المستحلب', 'Film Scratches': 'خدوش الفيلم', 'Dust & Fibers': 'غبار وألياف', 'Paper Foxing': 'بقع الورق القديم'}, softFocus: "تركيز ناعم", vignette: "تظليل",
@@ -652,7 +727,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'MAGENTA',
         wbReset: 'Réinitialiser BdB',
         wbTemp: 'TEMP.',
-        wbTint: 'TEINTE', strengthLabel: 'Intensité', noiseScale: 'Échelle de texture', language: "Langue", livePreview: "APERÇU EN DIRECT",
+        wbTint: 'TEINTE', strengthLabel: 'Intensité', noiseScale: 'Échelle de texture', language: "Langue",
         before: "AVANT", after: "APRÈS", halationGroup: "HALATION", bloomGroup: "BLOOM", compareTooltip: "Basculer entre l’image originale et l’image traitée",
         previewQueue: "Exécutez le nœud une fois pour créer une source d’aperçu.", previewUpdating: "Mise à jour de l’aperçu…",
         previewUnavailable: "Aperçu indisponible", source: "Source", grainDetail: "DÉTAIL GRAIN & TEXTURE · RECADRAGE CENTRAL 240 PX", filmGrain: "GRAIN ARGENTIQUE", antiAIGroup: "ANTI-IA", sabattierGroup: "SABATTIER", proceduralTexture: "TEXTURE PROCÉDURALE", noiseTextureLabel: "Texture de bruit", noiseAmount: "Intensité du bruit", noiseSeed: "Graine du bruit", noiseTextures: {'Gaussian': 'Gaussien', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Microcellules Worley', 'Domain Warp': 'Distorsion de domaine', 'Silver Halide Clumps': 'Amas d’halogénure d’argent', 'Emulsion Mottle': 'Marbrure d’émulsion', 'Film Scratches': 'Rayures de film', 'Dust & Fibers': 'Poussière et fibres', 'Paper Foxing': 'Taches de papier ancien'}, softFocus: "FLOU DIFFUS", vignette: "VIGNETTAGE",
@@ -678,7 +753,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'MAGENTA',
         wbReset: 'Redefinir WB',
         wbTemp: 'TEMP.',
-        wbTint: 'MATIZ', strengthLabel: 'Intensidade', noiseScale: 'Escala da textura', language: "Idioma", livePreview: "PRÉVIA AO VIVO",
+        wbTint: 'MATIZ', strengthLabel: 'Intensidade', noiseScale: 'Escala da textura', language: "Idioma",
         before: "ANTES", after: "DEPOIS", halationGroup: "HALATION", bloomGroup: "BLOOM", compareTooltip: "Alternar entre a imagem original e a processada",
         previewQueue: "Execute o nó uma vez para criar uma fonte de prévia.", previewUpdating: "Atualizando prévia…",
         previewUnavailable: "Prévia indisponível", source: "Origem", grainDetail: "DETALHE DE GRÃO E TEXTURA · RECORTE CENTRAL 240 PX", filmGrain: "GRÃO DE FILME", antiAIGroup: "ANTI-IA", sabattierGroup: "SABATTIER", proceduralTexture: "TEXTURA PROCEDURAL", noiseTextureLabel: "Textura de ruído", noiseAmount: "Intensidade do ruído", noiseSeed: "Semente do ruído", noiseTextures: {'Gaussian': 'Gaussiano', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Microcélulas Worley', 'Domain Warp': 'Distorção de domínio', 'Silver Halide Clumps': 'Aglomerados de haleto de prata', 'Emulsion Mottle': 'Marmorização da emulsão', 'Film Scratches': 'Riscos no filme', 'Dust & Fibers': 'Poeira e fibras', 'Paper Foxing': 'Manchas de papel envelhecido'}, softFocus: "FOCO SUAVE", vignette: "VINHETA",
@@ -704,7 +779,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'ПУРПУРНЫЙ',
         wbReset: 'Сбросить ББ',
         wbTemp: 'ТЕМП.',
-        wbTint: 'ОТТЕНОК', strengthLabel: 'Сила', noiseScale: 'Масштаб текстуры', language: "Язык", livePreview: "ПРЕДПРОСМОТР В РЕАЛЬНОМ ВРЕМЕНИ",
+        wbTint: 'ОТТЕНОК', strengthLabel: 'Сила', noiseScale: 'Масштаб текстуры', language: "Язык",
         before: "ДО", after: "ПОСЛЕ", halationGroup: "ОРЕОЛ", bloomGroup: "СВЕЧЕНИЕ", compareTooltip: "Переключить исходное и обработанное изображение",
         previewQueue: "Запустите узел один раз, чтобы создать источник предпросмотра.", previewUpdating: "Обновление предпросмотра…",
         previewUnavailable: "Предпросмотр недоступен", source: "Источник", grainDetail: "ДЕТАЛИ ЗЕРНА И ТЕКСТУРЫ · ЦЕНТРАЛЬНЫЙ КАДР 240 PX", filmGrain: "ЗЕРНО ПЛЁНКИ", antiAIGroup: "АНТИ-ИИ", sabattierGroup: "САБАТЬЕ", proceduralTexture: "ПРОЦЕДУРНАЯ ТЕКСТУРА", noiseTextureLabel: "Текстура шума", noiseAmount: "Интенсивность шума", noiseSeed: "Сид шума", noiseTextures: {'Gaussian': 'Гауссовский', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Микроячейки Worley', 'Domain Warp': 'Доменное искажение', 'Silver Halide Clumps': 'Скопления галогенида серебра', 'Emulsion Mottle': 'Пятнистость эмульсии', 'Film Scratches': 'Царапины плёнки', 'Dust & Fibers': 'Пыль и волокна', 'Paper Foxing': 'Пятна старой бумаги'}, softFocus: "МЯГКИЙ ФОКУС", vignette: "ВИНЬЕТКА",
@@ -730,7 +805,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'マゼンタ',
         wbReset: 'WBをリセット',
         wbTemp: '色温度',
-        wbTint: '色かぶり', strengthLabel: '強さ', noiseScale: 'テクスチャスケール', language: "言語", livePreview: "ライブプレビュー",
+        wbTint: '色かぶり', strengthLabel: '強さ', noiseScale: 'テクスチャスケール', language: "言語",
         before: "処理前", after: "処理後", halationGroup: "ハレーション", bloomGroup: "ブルーム", compareTooltip: "元画像と処理後の画像を切り替える",
         previewQueue: "プレビューを作成するには、ノードを一度実行してください。", previewUpdating: "プレビューを更新中…",
         previewUnavailable: "プレビューを利用できません", source: "元画像", grainDetail: "グレイン＆テクスチャ詳細 · 中央クロップ 240 PX", filmGrain: "フィルムグレイン", antiAIGroup: "AI補正", sabattierGroup: "サバティエ", proceduralTexture: "プロシージャルテクスチャ", noiseTextureLabel: "ノイズテクスチャ", noiseAmount: "ノイズ量", noiseSeed: "ノイズシード", noiseTextures: {'Gaussian': 'ガウス', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Worleyマイクロセル', 'Domain Warp': 'ドメインワープ', 'Silver Halide Clumps': 'ハロゲン化銀の粒子塊', 'Emulsion Mottle': '乳剤のむら', 'Film Scratches': 'フィルムの傷', 'Dust & Fibers': 'ほこりと繊維', 'Paper Foxing': '古紙の斑点'}, softFocus: "ソフトフォーカス", vignette: "ビネット",
@@ -756,7 +831,7 @@ const TRANSLATIONS = Object.freeze({
         wbMagenta: 'MAGENTA',
         wbReset: 'Weißabgleich zurücksetzen',
         wbTemp: 'TEMP.',
-        wbTint: 'FARBTON', strengthLabel: 'Stärke', noiseScale: 'Texturskalierung', language: "Sprache", livePreview: "LIVE-VORSCHAU",
+        wbTint: 'FARBTON', strengthLabel: 'Stärke', noiseScale: 'Texturskalierung', language: "Sprache",
         before: "VORHER", after: "NACHHER", halationGroup: "HALATION", bloomGroup: "BLOOM", compareTooltip: "Zwischen Original und bearbeitetem Bild wechseln",
         previewQueue: "Führe den Node einmal aus, um eine Vorschauquelle zu erstellen.", previewUpdating: "Vorschau wird aktualisiert…",
         previewUnavailable: "Vorschau nicht verfügbar", source: "Quelle", grainDetail: "KORN- & TEXTURDETAIL · MITTIGER AUSSCHNITT 240 PX", filmGrain: "FILMKORN", antiAIGroup: "ANTI-KI", sabattierGroup: "SABATTIER", proceduralTexture: "PROZEDURALE TEXTUR", noiseTextureLabel: "Rauschtextur", noiseAmount: "Rauschstärke", noiseSeed: "Rausch-Seed", noiseTextures: {'Gaussian': 'Gauß', 'Value fBm': 'Value fBm', 'Gradient fBm': 'Gradient fBm', 'Simplex fBm': 'Simplex fBm', 'Ridged fBm': 'Ridged fBm', 'Worley Microcells': 'Worley-Mikrozellen', 'Domain Warp': 'Domain Warp', 'Silver Halide Clumps': 'Silberhalogenid-Cluster', 'Emulsion Mottle': 'Emulsionsmarmorierung', 'Film Scratches': 'Filmschlieren', 'Dust & Fibers': 'Staub und Fasern', 'Paper Foxing': 'Altpapierflecken'}, softFocus: "SOFT FOCUS", vignette: "VIGNETTE",
@@ -899,29 +974,14 @@ function makeText(text, size = "11px") {
 
 function createLanguageControl() {
     const row = document.createElement("div");
-    row.style.display = "flex";
-    row.style.alignItems = "center";
-    row.style.gap = "6px";
-    row.style.flexShrink = "0";
-
-    const icon = makeText("🌐", "15px");
-    icon.style.lineHeight = "1";
-    icon.style.opacity = "0.88";
+    row.className = "zrl-glass zrl-icon";
+    const icon = makeText("🌐", "13px");
     icon.setAttribute("role", "img");
     icon.setAttribute("aria-label", "Language");
     icon.title = "Language";
 
+    // The real select sits invisibly over the globe so the native list opens on click.
     const select = document.createElement("select");
-    select.style.maxWidth = "142px";
-    select.style.width = "auto";
-    select.style.minWidth = "108px";
-    select.style.height = "27px";
-    select.style.padding = "2px 6px";
-    select.style.border = "1px solid var(--border-color, #555)";
-    select.style.borderRadius = "5px";
-    select.style.background = "var(--comfy-input-bg, #20242A)";
-    select.style.color = "var(--fg-color, #DDD)";
-    select.style.fontSize = "11px";
     select.setAttribute("aria-label", "Zuanfilm Retrolab language");
     for (const language of LANGUAGES) {
         const option = document.createElement("option");
@@ -934,167 +994,42 @@ function createLanguageControl() {
     return { row, icon, select };
 }
 
-function createRetroLabWordmark() {
-    // Decorative identity strip inspired by the accepted RenderQn body wordmark:
-    // keep the native ComfyUI node title untouched, and center a restrained
-    // product lockup between fine measurement-guide rules inside the panel.
-    const brand = document.createElement("div");
-    brand.style.display = "grid";
-    // The wordmark now shares the Live Preview / locale toolbar. Keep the
-    // decorative rules deliberately short so the identity reads as a compact
-    // center lockup rather than a separate full-width header band.
-    brand.style.gridTemplateColumns = "minmax(12px, 26px) auto minmax(12px, 26px)";
-    brand.style.alignItems = "center";
-    brand.style.columnGap = "6px";
-    brand.style.width = "auto";
-    brand.style.maxWidth = "100%";
-    brand.style.minWidth = "0";
-    brand.style.boxSizing = "border-box";
-    brand.style.padding = "0 2px";
-    brand.style.flexShrink = "1";
+const PREVIEW_MODES = Object.freeze(["split", "before", "after"]);
 
-    const makeGuide = (reverse = false) => {
-        const guide = document.createElement("div");
-        guide.style.display = "flex";
-        guide.style.alignItems = "center";
-        guide.style.gap = "6px";
-        guide.style.minWidth = "0";
-        const rule = document.createElement("span");
-        rule.style.display = "block";
-        rule.style.flex = "1";
-        rule.style.height = "1px";
-        rule.style.background = reverse
-            ? "linear-gradient(to left, rgba(205,174,132,0.08), rgba(205,174,132,0.52))"
-            : "linear-gradient(to right, rgba(205,174,132,0.08), rgba(205,174,132,0.52))";
-        const terminal = document.createElement("span");
-        terminal.style.display = "block";
-        terminal.style.width = "5px";
-        terminal.style.height = "5px";
-        terminal.style.flexShrink = "0";
-        terminal.style.border = "1px solid rgba(205,174,132,0.58)";
-        terminal.style.transform = "rotate(45deg)";
-        if (reverse) guide.append(terminal, rule);
-        else guide.append(rule, terminal);
-        return guide;
-    };
-
-    const lockup = document.createElement("div");
-    lockup.style.display = "flex";
-    lockup.style.flexDirection = "column";
-    lockup.style.alignItems = "center";
-    lockup.style.justifyContent = "center";
-    lockup.style.gap = "1px";
-    lockup.style.minWidth = "0";
-
-    const maker = makeText("@zuanfilm", "10px");
-    maker.style.fontFamily = '"Courier New", monospace';
-    maker.style.fontWeight = "700";
-    maker.style.letterSpacing = "0.22em";
-    maker.style.paddingLeft = "0.22em";
-    maker.style.color = "#BDA27F";
-    maker.style.opacity = "0.88";
-
-    const wordmark = makeText("RETROLAB", "18px");
-    wordmark.style.fontFamily = '"Rockwell Extra Bold", Rockwell, "Bookman Old Style", Georgia, serif';
-    wordmark.style.fontWeight = "700";
-    wordmark.style.letterSpacing = "0.16em";
-    wordmark.style.paddingLeft = "0.16em";
-    wordmark.style.lineHeight = "1.02";
-    wordmark.style.color = "#E1C8A4";
-    wordmark.style.textShadow = "0 1px 0 rgba(0,0,0,0.55), 0 0 9px rgba(190,145,88,0.16)";
-
-    const verticalGuide = document.createElement("span");
-    verticalGuide.style.display = "block";
-    verticalGuide.style.width = "1px";
-    verticalGuide.style.height = "5px";
-    verticalGuide.style.marginTop = "2px";
-    verticalGuide.style.background = "linear-gradient(to bottom, rgba(205,174,132,0.62), rgba(205,174,132,0.05))";
-
-    const tagline = makeText("ANALOG FILM INSPIRED", "6px");
-    tagline.style.fontFamily = '"Courier New", monospace';
-    tagline.style.fontWeight = "600";
-    tagline.style.letterSpacing = "0.16em";
-    tagline.style.paddingLeft = "0.16em";
-    tagline.style.color = "#9E8D75";
-    tagline.style.opacity = "0.82";
-
-    lockup.append(maker, wordmark, verticalGuide, tagline);
-    brand.append(makeGuide(false), lockup, makeGuide(true));
-    brand.setAttribute("role", "img");
-    brand.setAttribute("aria-label", "@zuanfilm — Retrolab Analog Film Inspired");
-    return { element: brand, maker, wordmark, tagline };
-}
-
-function createPreviewCompareToggle() {
+function createPreviewModeControl() {
     const group = document.createElement("div");
-    group.style.display = "inline-flex";
-    group.style.alignItems = "center";
-    group.style.gap = "6px";
-    group.style.flexShrink = "0";
-
-    const stateLabel = makeText("AFTER", "9px");
-    stateLabel.style.fontWeight = "700";
-    stateLabel.style.letterSpacing = "0.045em";
-    stateLabel.style.opacity = "0.82";
-    stateLabel.style.minWidth = "42px";
-    stateLabel.style.textAlign = "right";
-
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.setAttribute("role", "switch");
-    toggle.setAttribute("aria-checked", "false");
-    toggle.style.width = "30px";
-    toggle.style.height = "17px";
-    toggle.style.padding = "2px";
-    toggle.style.border = "1px solid var(--border-color, #665B4C)";
-    toggle.style.borderRadius = "999px";
-    toggle.style.background = "rgba(139,112,78,0.24)";
-    toggle.style.display = "inline-flex";
-    toggle.style.alignItems = "center";
-    toggle.style.justifyContent = "flex-start";
-    toggle.style.cursor = "pointer";
-    toggle.style.boxSizing = "border-box";
-    toggle.style.flexShrink = "0";
-
-    const knob = document.createElement("span");
-    knob.style.display = "block";
-    knob.style.width = "11px";
-    knob.style.height = "11px";
-    knob.style.borderRadius = "50%";
-    knob.style.background = "#D6C09D";
-    knob.style.boxShadow = "0 1px 2px rgba(0,0,0,0.35)";
-    knob.style.transition = "transform 120ms ease";
-    toggle.append(knob);
-
-    let showingBefore = false;
+    group.className = "zrl-glass zrl-seg";
+    let mode = "split";
     let onChange = null;
     let currentTranslation = getTranslation("en");
-
-    const sync = () => {
-        toggle.setAttribute("aria-checked", showingBefore ? "true" : "false");
-        toggle.setAttribute("aria-label", currentTranslation.compareTooltip);
-        toggle.title = currentTranslation.compareTooltip;
-        toggle.style.background = showingBefore ? "rgba(205,174,132,0.62)" : "rgba(139,112,78,0.24)";
-        toggle.style.justifyContent = showingBefore ? "flex-end" : "flex-start";
-        stateLabel.textContent = showingBefore ? currentTranslation.before : currentTranslation.after;
-    };
-
-    toggle.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        showingBefore = !showingBefore;
-        sync();
-        onChange?.(showingBefore);
+    const buttons = PREVIEW_MODES.map((value) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            mode = value;
+            sync();
+            onChange?.(mode);
+        });
+        group.append(button);
+        return button;
     });
-    group.append(stateLabel, toggle);
+    function sync() {
+        PREVIEW_MODES.forEach((value, index) => {
+            const button = buttons[index];
+            button.textContent = value === "split" ? "◧" : currentTranslation[value];
+            button.title = value === "split" ? currentTranslation.compareTooltip : currentTranslation[value];
+            button.setAttribute("aria-pressed", value === mode ? "true" : "false");
+        });
+    }
     sync();
-
     return {
         element: group,
-        toggle,
-        isBefore: () => showingBefore,
-        setBefore(value) {
-            showingBefore = Boolean(value);
+        buttons,
+        mode: () => mode,
+        setMode(value) {
+            mode = PREVIEW_MODES.includes(value) ? value : "split";
             sync();
         },
         applyLanguage(translation) {
@@ -1105,13 +1040,26 @@ function createPreviewCompareToggle() {
     };
 }
 
+function applyPreviewMode(ui) {
+    const mode = ui.compare.mode();
+    const hasBefore = ui.beforeImage.style.visibility === "visible";
+    const position = mode === "split" ? ui.splitPosition : mode === "before" ? 100 : 0;
+    ui.beforeImage.style.clipPath = `inset(0 ${100 - position}% 0 0)`;
+    ui.split.style.display = mode === "split" && hasBefore ? "block" : "none";
+    ui.split.style.left = `${position}%`;
+}
+
 function renderActiveCompositionPreview(node) {
     const ui = node?._zrlPreviewUI;
     if (!ui) return;
-    const src = ui.compare.isBefore()
-        ? node._zrlPreviewOriginalSrc
-        : node._zrlPreviewProcessedSrc;
-    if (src) ui.fullImage.src = src;
+    if (node._zrlVideo) {
+        showVideoFrame(node);
+        return;
+    }
+    if (node._zrlPreviewProcessedSrc) ui.fullImage.src = node._zrlPreviewProcessedSrc;
+    if (node._zrlPreviewOriginalSrc) ui.beforeImage.src = node._zrlPreviewOriginalSrc;
+    ui.beforeImage.style.visibility = node._zrlPreviewOriginalSrc && ui.fullImage.style.visibility === "visible" ? "visible" : "hidden";
+    applyPreviewMode(ui);
 }
 
 function createWhiteBalanceWheel(node, temperatureWidget, tintWidget) {
@@ -1125,12 +1073,8 @@ function createWhiteBalanceWheel(node, temperatureWidget, tintWidget) {
     column.style.minWidth = "0";
     column.style.width = "100%";
 
-    const heading = makeText(translation.whiteBalanceLabel, "9px");
-    heading.style.fontWeight = "700";
-    heading.style.letterSpacing = "0.065em";
-    heading.style.opacity = "0.82";
-    heading.style.alignSelf = "flex-end";
-    heading.style.textAlign = "right";
+    const heading = makeText(translation.whiteBalanceLabel, "10px");
+    heading.className = "zrl-heading";
 
     // The reset control occupies the left edge of the White Balance row,
     // vertically aligned with the Emulsion dropdown. The wheel/readouts are
@@ -1184,8 +1128,8 @@ function createWhiteBalanceWheel(node, temperatureWidget, tintWidget) {
     wheelFrame.style.boxSizing = "border-box";
     wheelFrame.style.padding = "2px";
     wheelFrame.style.borderRadius = "50%";
-    wheelFrame.style.background = "linear-gradient(145deg, #FFFFFF 0%, #DDE2E8 13%, #87919D 31%, #F8FAFC 49%, #9AA3AE 72%, #EEF1F4 100%)";
-    wheelFrame.style.boxShadow = "0 2px 7px rgba(0,0,0,0.42), inset 0 1px 1px rgba(255,255,255,0.82), inset 0 -1px 1px rgba(29,33,39,0.48)";
+    wheelFrame.style.background = "#3A3631";
+    wheelFrame.style.boxShadow = "0 2px 8px rgba(0,0,0,0.45)";
 
     const innerRim = document.createElement("div");
     innerRim.style.width = "100%";
@@ -1193,8 +1137,7 @@ function createWhiteBalanceWheel(node, temperatureWidget, tintWidget) {
     innerRim.style.boxSizing = "border-box";
     innerRim.style.padding = "1px";
     innerRim.style.borderRadius = "50%";
-    innerRim.style.background = "linear-gradient(155deg, rgba(255,255,255,0.92), rgba(107,116,127,0.92) 35%, rgba(236,240,244,0.95) 61%, rgba(92,100,111,0.92))";
-    innerRim.style.boxShadow = "inset 0 1px 1px rgba(255,255,255,0.55), 0 0 0 1px rgba(20,23,28,0.54)";
+    innerRim.style.background = "#2E2B28";
 
     const wheel = document.createElement("div");
     wheel.style.position = "relative";
@@ -1401,28 +1344,8 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
     responseWidget.hidden = true;
 
     const row = document.createElement("div");
-    row.style.display = "grid";
-    row.style.gridTemplateColumns = "minmax(0, 1fr) minmax(0, 1fr)";
-    row.style.columnGap = "12px";
-    row.style.alignItems = "stretch";
-    row.style.width = "100%";
-    row.style.boxSizing = "border-box";
-    row.style.padding = "2px 2px 8px";
-    row.style.borderBottom = "1px solid var(--border-color, rgba(255,255,255,0.12))";
-
-    const emulsionColumn = document.createElement("div");
-    emulsionColumn.style.display = "flex";
-    emulsionColumn.style.flexDirection = "column";
-    emulsionColumn.style.gap = "5px";
-    emulsionColumn.style.minWidth = "0";
-    emulsionColumn.style.paddingRight = "6px";
-    emulsionColumn.style.borderRight = "1px solid var(--border-color, rgba(255,255,255,0.10))";
-
-    const label = makeText(getTranslation(node._zrlLanguage || "en").emulsionLabel, "9px");
-    label.title = parameterTooltip("color_emulsion");
-    label.style.fontWeight = "700";
-    label.style.letterSpacing = "0.065em";
-    label.style.opacity = "0.82";
+    row.className = "zrl-dr zrl-emulsion";
+    const emulsionLabel = getTranslation(node._zrlLanguage || "en").emulsionLabel;
 
     // Keep a hidden canonical select as a lightweight option/value adapter.
     // The visible popup is a body-level portal, so the 50-item list can always
@@ -1456,44 +1379,26 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
 
     const trigger = document.createElement("button");
     trigger.type = "button";
-    trigger.style.display = "flex";
-    trigger.style.alignItems = "center";
-    trigger.style.justifyContent = "space-between";
-    trigger.style.gap = "8px";
-    trigger.style.width = "100%";
-    trigger.style.maxWidth = "100%";
-    trigger.style.minWidth = "0";
-    trigger.style.height = "30px";
-    trigger.style.padding = "3px 7px";
-    trigger.style.border = "1px solid var(--border-color, #555)";
-    trigger.style.borderRadius = "5px";
-    trigger.style.background = "var(--comfy-input-bg, #20242A)";
-    trigger.style.color = "var(--fg-color, #DDD)";
-    trigger.style.fontSize = "11px";
-    trigger.style.textAlign = "left";
-    trigger.style.cursor = "pointer";
-    trigger.style.boxSizing = "border-box";
+    trigger.className = "zrl-trigger";
     trigger.title = parameterTooltip("color_emulsion");
     trigger.setAttribute("role", "combobox");
     trigger.setAttribute("aria-haspopup", "listbox");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", label.textContent);
+    trigger.setAttribute("aria-label", emulsionLabel);
 
+    const swatch = document.createElement("span");
+    swatch.className = "zrl-swatch";
     const triggerValue = document.createElement("span");
-    triggerValue.style.overflow = "hidden";
-    triggerValue.style.textOverflow = "ellipsis";
-    triggerValue.style.whiteSpace = "nowrap";
-    triggerValue.style.minWidth = "0";
-    triggerValue.style.flex = "1 1 auto";
+    triggerValue.className = "zrl-trigger-value";
     const triggerArrow = document.createElement("span");
     triggerArrow.textContent = "▾";
-    triggerArrow.style.flex = "0 0 auto";
-    triggerArrow.style.opacity = "0.8";
-    trigger.append(triggerValue, triggerArrow);
+    triggerArrow.style.opacity = "0.6";
+    trigger.append(swatch, triggerValue, triggerArrow);
 
     const menu = document.createElement("div");
+    menu.className = "zrl-dr zrl-menu";
     menu.setAttribute("role", "listbox");
-    menu.setAttribute("aria-label", label.textContent);
+    menu.setAttribute("aria-label", emulsionLabel);
     menu.style.display = "none";
     menu.style.position = "fixed";
     menu.style.zIndex = "10000";
@@ -1562,71 +1467,50 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
         menuGroups.push({ family: group.family, heading: groupHeading, options: groupOptions });
     }
 
-    const controlRow = document.createElement("div");
-    controlRow.style.display = "flex";
-    controlRow.style.alignItems = "center";
-    controlRow.style.width = "100%";
-    controlRow.style.height = "82px";
-    controlRow.style.minHeight = "82px";
-    controlRow.style.minWidth = "0";
-    controlRow.append(select, trigger);
-
-    // Compact one-line creative control, directly beneath the emulsion selector.
+    // Emulsion Response as a compact stepper; double-click the value for 1.00×.
     // The hidden ComfyUI widget remains the canonical serialized value.
-    const responseRow = document.createElement("div");
-    responseRow.setAttribute("data-zrl-control", "emulsion_response");
-    responseRow.style.display = "grid";
-    responseRow.style.gridTemplateColumns = "auto minmax(0, 1fr) 39px";
-    responseRow.style.columnGap = "7px";
-    responseRow.style.alignItems = "center";
-    responseRow.style.width = "100%";
-    responseRow.style.minWidth = "0";
-    responseRow.style.boxSizing = "border-box";
-    responseRow.style.padding = "0 1px 2px";
-
-    const responseTranslation = emulsionResponseTranslation(node._zrlLanguage || "en");
-    const responseLabel = makeText(responseTranslation.label, "8px");
-    responseLabel.style.fontWeight = "700";
-    responseLabel.style.letterSpacing = "0.035em";
-    responseLabel.style.whiteSpace = "nowrap";
-    responseLabel.style.opacity = "0.82";
-    responseLabel.title = parameterTooltip("emulsion_response");
-
-    const responseInput = document.createElement("input");
-    responseInput.type = "range";
-    responseInput.min = "0.5";
-    responseInput.max = "3";
-    responseInput.step = "0.01";
-    responseInput.value = String(responseWidget.value ?? 1.0);
-    responseInput.title = parameterTooltip("emulsion_response");
-    responseInput.setAttribute("aria-label", responseTranslation.label);
-    responseInput.style.width = "100%";
-    responseInput.style.minWidth = "0";
-    responseInput.style.height = "6px";
-    responseInput.style.margin = "0";
-    responseInput.style.padding = "0";
-    responseInput.style.border = "0";
-    responseInput.style.borderRadius = "4px";
-    responseInput.style.outline = "none";
-    responseInput.style.cursor = "pointer";
-    responseInput.style.appearance = "none";
-
-    const responseValue = makeText(Number(responseWidget.value ?? 1.0).toFixed(2) + "×", "9px");
-    responseValue.style.fontVariantNumeric = "tabular-nums";
-    responseValue.style.textAlign = "right";
-    responseValue.style.whiteSpace = "nowrap";
-    responseValue.style.opacity = "0.9";
-
-    responseInput.addEventListener("input", () => {
-        const next = Math.min(3.0, Math.max(0.5, Number(responseInput.value)));
-        responseWidget.value = next;
-        responseValue.textContent = next.toFixed(2) + "×";
-        updateRangeFill(responseInput);
-        responseWidget.callback?.(next, app.canvas, node);
+    const responseStepper = document.createElement("div");
+    responseStepper.className = "zrl-stepper";
+    responseStepper.setAttribute("data-zrl-control", "emulsion_response");
+    const responseMinus = document.createElement("button");
+    responseMinus.type = "button";
+    responseMinus.textContent = "−";
+    const responseValue = document.createElement("span");
+    const responsePlus = document.createElement("button");
+    responsePlus.type = "button";
+    responsePlus.textContent = "+";
+    responseStepper.append(responseMinus, responseValue, responsePlus);
+    const applyResponseLanguage = () => {
+        const tooltip = parameterTooltip("emulsion_response");
+        const label = emulsionResponseTranslation(node._zrlLanguage || "en").label;
+        responseStepper.title = tooltip;
+        responseStepper.setAttribute("aria-label", label);
+        responseMinus.setAttribute("aria-label", `${label} −`);
+        responsePlus.setAttribute("aria-label", `${label} +`);
+    };
+    const showResponse = () => {
+        responseValue.textContent = Number(responseWidget.value ?? 1.0).toFixed(2) + "×";
+    };
+    const setResponse = (next) => {
+        const value = Math.round(Math.min(3.0, Math.max(0.5, next)) * 100) / 100;
+        responseWidget.value = value;
+        showResponse();
+        responseWidget.callback?.(value, app.canvas, node);
         node.setDirtyCanvas?.(true, true);
+    };
+    responseMinus.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setResponse(Number(responseWidget.value ?? 1.0) - 0.05);
     });
-    updateRangeFill(responseInput);
-    responseRow.append(responseLabel, responseInput, responseValue);
+    responsePlus.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setResponse(Number(responseWidget.value ?? 1.0) + 0.05);
+    });
+    responseValue.addEventListener("dblclick", () => setResponse(1.0));
+    applyResponseLanguage();
+    showResponse();
 
     let isOpen = false;
     const removeOpenListeners = () => {
@@ -1697,10 +1581,11 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
             return Array.from(entry.children || []);
         }).find((entry) => entry.value === selected);
         triggerValue.textContent = selectedOption?.textContent || neutral.textContent;
+        swatch.setAttribute("data-neutral", selected === "neutral" ? "true" : "false");
         for (const optionButton of menuOptions) {
             const active = optionButton.value === selected;
             optionButton.setAttribute("aria-selected", active ? "true" : "false");
-            optionButton.style.background = active ? "rgba(103,164,225,0.30)" : "transparent";
+            optionButton.style.background = active ? "rgba(231,181,106,0.22)" : "transparent";
             optionButton.style.color = active ? "var(--fg-color, #FFF)" : "inherit";
         }
     }
@@ -1733,34 +1618,25 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
     select.value = backendWidget.value || "neutral";
     syncSelectedOption();
     const overlayRoot = document.body || document.documentElement;
-    if (overlayRoot?.append) overlayRoot.append(menu);
-    else controlRow.append(menu);
-    emulsionColumn.append(label, controlRow, responseRow);
+    overlayRoot.append(menu);
+    row.append(select, trigger, responseStepper);
 
+    // White Balance lives in the Color tab; the emulsion control keeps owning
+    // it so reset/configure/language syncing stay in one place.
     const whiteBalanceUI = createWhiteBalanceWheel(node, temperatureWidget, tintWidget);
-    whiteBalanceUI.column.style.paddingLeft = "2px";
-    row.append(emulsionColumn, whiteBalanceUI.column);
     row.addEventListener("pointerdown", (event) => event.stopPropagation());
     row.addEventListener("mousedown", (event) => event.stopPropagation());
     return {
-        row, emulsionColumn, controlRow, label, select, trigger, triggerValue, menu, menuOptions, menuGroups,
-        responseRow, responseLabel, responseInput, responseValue, whiteBalanceUI,
+        row, select, trigger, triggerValue, swatch, menu, menuOptions, menuGroups,
+        responseStepper, responseMinus, responseValue, responsePlus, whiteBalanceUI,
         syncFromBackend() {
             select.value = backendWidget.value || "neutral";
             syncSelectedOption();
-            const currentResponse = Number(responseWidget.value ?? 1.0);
-            responseInput.value = String(currentResponse);
-            responseValue.textContent = currentResponse.toFixed(2) + "×";
-            updateRangeFill(responseInput);
+            showResponse();
             whiteBalanceUI.syncFromBackend();
         },
         applyLanguage(translation) {
-            const responseText = emulsionResponseTranslation(node._zrlLanguage || "en");
-            responseLabel.textContent = responseText.label;
-            responseLabel.title = parameterTooltip("emulsion_response");
-            responseInput.title = parameterTooltip("emulsion_response");
-            responseInput.setAttribute("aria-label", responseText.label);
-            label.textContent = translation.emulsionLabel;
+            applyResponseLanguage();
             trigger.setAttribute("aria-label", translation.emulsionLabel);
             menu.setAttribute("aria-label", translation.emulsionLabel);
             if (select.children[0]) select.children[0].textContent = translation.emulsionNeutral;
@@ -1787,105 +1663,78 @@ function createEmulsionAtlasControl(node, backendWidget, temperatureWidget, tint
 
 function createPreviewPanel() {
     const panel = document.createElement("div");
-    panel.style.display = "flex";
-    panel.style.flexDirection = "column";
-    panel.style.alignItems = "stretch";
-    panel.style.gap = "6px";
-    panel.style.width = "100%";
-    panel.style.boxSizing = "border-box";
-    panel.style.padding = "7px 4px 8px";
+    panel.className = "zrl-dr zrl-preview";
 
-    const brandHeader = createRetroLabWordmark();
+    const card = document.createElement("div");
+    card.className = "zrl-card";
+    const fullImage = document.createElement("img");
+    fullImage.className = "zrl-frame";
+    fullImage.alt = "Zuanfilm Retrolab live preview";
+    fullImage.style.visibility = "hidden";
+    const beforeImage = document.createElement("img");
+    beforeImage.className = "zrl-frame";
+    beforeImage.alt = "Zuanfilm Retrolab source";
+    beforeImage.style.visibility = "hidden";
+    const split = document.createElement("div");
+    split.className = "zrl-split";
+    split.style.display = "none";
 
-    // One compact toolbar row replaces the former standalone brand strip.
-    // The wordmark is centered between the preview controls and locale menu,
-    // saving vertical space directly above the live image.
-    const headerRow = document.createElement("div");
-    headerRow.style.display = "grid";
-    headerRow.style.gridTemplateColumns = "minmax(0, 1fr) auto minmax(0, 1fr)";
-    headerRow.style.alignItems = "center";
-    headerRow.style.columnGap = "8px";
-    headerRow.style.width = "100%";
-    headerRow.style.boxSizing = "border-box";
-
-    const header = makeText("LIVE PREVIEW", "10px");
-    header.style.fontWeight = "700";
-    header.style.letterSpacing = "0.07em";
-
-    const titleGroup = document.createElement("div");
-    titleGroup.style.display = "flex";
-    titleGroup.style.alignItems = "center";
-    titleGroup.style.gap = "12px";
-    titleGroup.style.minWidth = "0";
-    titleGroup.style.justifySelf = "start";
-    const compare = createPreviewCompareToggle();
-    titleGroup.append(header, compare.element);
+    const compare = createPreviewModeControl();
+    const modeSlot = document.createElement("div");
+    modeSlot.className = "zrl-ov";
+    modeSlot.style.top = "8px";
+    modeSlot.style.left = "8px";
+    modeSlot.append(compare.element);
 
     const languageControl = createLanguageControl();
-    const languageActions = document.createElement("div");
-    languageActions.style.display = "flex";
-    languageActions.style.flexDirection = "column";
-    languageActions.style.alignItems = "flex-end";
-    languageActions.style.gap = "4px";
-    languageActions.style.justifySelf = "end";
-    languageActions.style.minWidth = "0";
-    languageActions.append(languageControl.row);
-    const resetSlot = document.createElement("div");
-    resetSlot.style.display = "flex";
-    resetSlot.style.justifyContent = "flex-end";
-    resetSlot.style.width = "100%";
-    languageActions.append(resetSlot);
-    headerRow.append(titleGroup, brandHeader.element, languageActions);
+    const actions = document.createElement("div");
+    actions.className = "zrl-ov";
+    actions.style.top = "8px";
+    actions.style.right = "8px";
+    actions.append(languageControl.row);
 
-    const status = makeText("Queue the node once to create a preview source.", "10px");
-    status.style.opacity = "0.7";
-    status.style.whiteSpace = "normal";
+    const status = makeText("Queue the node once to create a preview source.", "10.5px");
+    status.className = "zrl-glass zrl-status";
+    const statusSlot = document.createElement("div");
+    statusSlot.className = "zrl-ov";
+    statusSlot.style.left = "8px";
+    statusSlot.style.right = "100px";
+    statusSlot.style.bottom = "8px";
+    statusSlot.append(status);
 
-    const fullImage = document.createElement("img");
-    fullImage.alt = "Zuanfilm Retrolab full-frame live preview";
-    fullImage.style.display = "block";
-    fullImage.style.width = "100%";
-    fullImage.style.height = "420px";
-    fullImage.style.objectFit = "contain";
-    fullImage.style.objectPosition = "center";
-    fullImage.style.margin = "0 auto";
-    fullImage.style.background = "rgba(0,0,0,0.20)";
-    fullImage.style.borderRadius = "4px";
-    fullImage.style.visibility = "hidden";
-
-    panel.append(headerRow, status, fullImage);
-    return { panel, brandHeader, header, status, fullImage, compare, resetSlot, languageIcon: languageControl.icon, languageSelect: languageControl.select };
-}
-
-function createGrainDetailPanel() {
-    const panel = document.createElement("div");
-    panel.style.display = "flex";
-    panel.style.flexDirection = "column";
-    panel.style.alignItems = "center";
-    panel.style.justifyContent = "center";
-    panel.style.gap = "5px";
-    panel.style.width = "100%";
-    panel.style.boxSizing = "border-box";
-    panel.style.padding = "7px 2px 3px";
-    panel.style.borderTop = "1px solid var(--border-color, rgba(255,255,255,0.12))";
-
-    const label = makeText("GRAIN & TEXTURE DETAIL · CENTER CROP 240 PX", "9px");
-    label.style.opacity = "0.72";
-    label.style.textAlign = "center";
-
+    // Native-resolution center crop for judging grain and texture at 100%.
+    const loupe = document.createElement("div");
+    loupe.className = "zrl-ov zrl-loupe";
+    loupe.style.right = "8px";
+    loupe.style.bottom = "8px";
+    loupe.style.display = "none";
     const grainImage = document.createElement("img");
     grainImage.alt = "Native-resolution 240 by 240 grain detail crop";
-    grainImage.style.display = "block";
-    grainImage.style.width = "220px";
-    grainImage.style.height = "220px";
-    grainImage.style.objectFit = "cover";
-    grainImage.style.imageRendering = "auto";
-    grainImage.style.background = "rgba(0,0,0,0.20)";
-    grainImage.style.borderRadius = "4px";
-    grainImage.style.visibility = "hidden";
+    loupe.append(grainImage);
 
-    panel.append(label, grainImage);
-    return { panel, label, grainImage };
+    card.append(fullImage, beforeImage, split, modeSlot, actions, statusSlot, loupe);
+    panel.append(card);
+
+    const ui = {
+        panel, card, status, fullImage, beforeImage, split, compare, splitPosition: 50, resetSlot: actions,
+        languageIcon: languageControl.icon, languageSelect: languageControl.select, loupe, grainImage,
+    };
+    let dragging = false;
+    const moveSplit = (event) => {
+        const rect = card.getBoundingClientRect();
+        ui.splitPosition = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
+        applyPreviewMode(ui);
+    };
+    card.addEventListener("pointerdown", (event) => {
+        if (compare.mode() !== "split" || event.target.closest(".zrl-ov")) return;
+        dragging = true;
+        card.setPointerCapture(event.pointerId);
+        moveSplit(event);
+    });
+    card.addEventListener("pointermove", (event) => { if (dragging) moveSplit(event); });
+    card.addEventListener("pointerup", () => { dragging = false; });
+    card.addEventListener("lostpointercapture", () => { dragging = false; });
+    return ui;
 }
 
 function normalizeHex(value, fallback = DEFAULT_COLOR) {
@@ -1904,7 +1753,7 @@ function createColorPickerRow(labelKey, backendWidget, node, fallbackColor) {
     row.style.boxSizing = "border-box";
     row.style.justifyContent = "flex-end";
 
-    const label = makeText(getTranslation(node._zrlLanguage)[labelKey], "12px");
+    const label = makeText(getTranslation(node._zrlLanguage)[labelKey], "10.5px");
     label.style.flex = "0 1 auto";
     label.style.textAlign = "right";
     label.style.whiteSpace = "nowrap";
@@ -2105,6 +1954,7 @@ function createLightLeakRangeControl(node, definition) {
 
 function createLightLeakControls(node, leakColorUI) {
     const section = document.createElement("div");
+    section.className = "zrl-dr zrl-panel";
     section.setAttribute("data-zrl-layout", "light-leak-two-column");
     section.style.display = "grid";
     section.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
@@ -2196,23 +2046,6 @@ function addDOMWidgetAt(node, name, element, beforeWidgetName = null, widgetOpti
     widgets.splice(targetIndex >= 0 ? targetIndex : widgets.length, 0, widget);
 }
 
-function createGroupDivider() {
-    const divider = document.createElement("div");
-    divider.setAttribute("data-zrl-region-separator", "standard");
-    divider.style.width = "100%";
-    divider.style.height = "1px";
-    divider.style.minHeight = "1px";
-    divider.style.maxHeight = "1px";
-    divider.style.flex = "0 0 1px";
-    divider.style.padding = "0";
-    divider.style.border = "0";
-    divider.style.boxSizing = "border-box";
-    divider.style.margin = "4px 0";
-    divider.style.background = "var(--border-color, rgba(255,255,255,0.16))";
-    divider.style.opacity = "0.82";
-    return divider;
-}
-
 const LIGHT_CONTROL_GROUPS = Object.freeze([
     {
         headingKey: "bloomGroup",
@@ -2234,6 +2067,7 @@ const LIGHT_CONTROL_GROUPS = Object.freeze([
 
 function createLightControls(node, halationColorUI) {
     const section = document.createElement("div");
+    section.className = "zrl-dr zrl-panel";
     section.style.display = "grid";
     section.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     section.style.columnGap = "12px";
@@ -2241,15 +2075,6 @@ function createLightControls(node, halationColorUI) {
     section.style.boxSizing = "border-box";
     section.style.padding = "7px 2px 6px";
 
-    const style = document.createElement("style");
-    style.textContent = `
-        .zrl-light-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: transparent; cursor: pointer; }
-        .zrl-light-range::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; }
-        .zrl-light-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: -3px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-        .zrl-light-range::-moz-range-track { height: 6px; border-radius: 4px; }
-        .zrl-light-range::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-    `;
-    section.append(style);
 
     node._zrlLightControls = [];
     const initialTranslation = getTranslation(node._zrlLanguage || "en");
@@ -2268,10 +2093,7 @@ function createLightControls(node, halationColorUI) {
         }
 
         const heading = makeText(initialTranslation[group.headingKey], "10px");
-        heading.style.fontWeight = "700";
-        heading.style.letterSpacing = "0.055em";
-        heading.style.opacity = "0.84";
-        heading.style.whiteSpace = "nowrap";
+        heading.className = "zrl-heading";
         column.append(heading);
 
         for (const definition of group.controls) {
@@ -2353,7 +2175,7 @@ function createLightControls(node, halationColorUI) {
         applyLanguage(translation) {
             for (let i = 0; i < LIGHT_CONTROL_GROUPS.length; i += 1) {
                 const group = LIGHT_CONTROL_GROUPS[i];
-                const heading = section.children[i + 1];
+                const heading = section.children[i];
                 if (heading?.children[0]) heading.children[0].textContent = translation[group.headingKey];
             }
             for (const control of node._zrlLightControls) {
@@ -2385,6 +2207,7 @@ const TONE_CONTROL_GROUPS = Object.freeze([
 
 function createToneControls(node) {
     const section = document.createElement("div");
+    section.className = "zrl-dr zrl-panel";
     section.style.display = "grid";
     section.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     section.style.columnGap = "12px";
@@ -2408,10 +2231,7 @@ function createToneControls(node) {
             column.style.paddingLeft = "2px";
         }
         const heading = makeText(initialTranslation[group.headingKey], "10px");
-        heading.style.fontWeight = "700";
-        heading.style.letterSpacing = "0.055em";
-        heading.style.opacity = "0.84";
-        heading.style.whiteSpace = "nowrap";
+        heading.className = "zrl-heading";
         column.append(heading);
 
         for (const definition of group.controls) {
@@ -2541,7 +2361,7 @@ function updateRangeFill(input) {
     const max = Number(input.max);
     const value = Number(input.value);
     const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
-    input.style.background = `linear-gradient(to right, var(--zrl-slider-fill, #35536B) 0%, var(--zrl-slider-fill, #35536B) ${percent}%, var(--comfy-input-bg, #20242A) ${percent}%, var(--comfy-input-bg, #20242A) 100%)`;
+    input.style.setProperty("--zrl-p", `${percent}%`);
 }
 
 function createGrainControls(node) {
@@ -2552,18 +2372,9 @@ function createGrainControls(node) {
     section.style.width = "100%";
     section.style.boxSizing = "border-box";
     section.style.padding = "6px 2px 3px";
+    section.className = "zrl-dr zrl-panel";
     section.setAttribute("data-zrl-region", "grain-texture-detail");
-    section.style.borderTop = "2px solid #FFFFFF";
 
-    const style = document.createElement("style");
-    style.textContent = `
-        .zrl-grain-range, .zrl-noise-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: transparent; cursor: pointer; }
-        .zrl-grain-range::-webkit-slider-runnable-track, .zrl-noise-range::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; }
-        .zrl-grain-range::-webkit-slider-thumb, .zrl-noise-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 13px; height: 13px; margin-top: -3.5px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-        .zrl-grain-range::-moz-range-track, .zrl-noise-range::-moz-range-track { height: 6px; border-radius: 4px; }
-        .zrl-grain-range::-moz-range-thumb, .zrl-noise-range::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-    `;
-    section.append(style);
 
     const grainColumn = document.createElement("div");
     grainColumn.style.display = "flex";
@@ -2573,9 +2384,7 @@ function createGrainControls(node) {
     grainColumn.style.paddingRight = "7px";
     grainColumn.style.borderRight = "1px solid var(--border-color, rgba(255,255,255,0.10))";
     const heading = makeText(getTranslation(node._zrlLanguage).filmGrain, "10px");
-    heading.style.fontWeight = "700";
-    heading.style.letterSpacing = "0.07em";
-    heading.style.opacity = "0.82";
+    heading.className = "zrl-heading";
     grainColumn.append(heading);
 
     const createRange = (column, widget, definition, labelText, className, labelKey = null) => {
@@ -2689,9 +2498,7 @@ function createGrainControls(node) {
     textureColumn.style.gap = "7px";
     textureColumn.style.minWidth = "0";
     const textureHeading = makeText(getTranslation(node._zrlLanguage).proceduralTexture, "10px");
-    textureHeading.style.fontWeight = "700";
-    textureHeading.style.letterSpacing = "0.07em";
-    textureHeading.style.opacity = "0.82";
+    textureHeading.className = "zrl-heading";
     textureColumn.append(textureHeading);
 
     const textureWidget = node.widgets?.find((candidate) => candidate.name === "noise_texture");
@@ -2908,6 +2715,7 @@ const OPTICAL_CONTROL_GROUPS = Object.freeze([
 
 function createOpticalControls(node) {
     const section = document.createElement("div");
+    section.className = "zrl-dr zrl-panel";
     section.style.display = "grid";
     section.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     section.style.columnGap = "12px";
@@ -2915,15 +2723,6 @@ function createOpticalControls(node) {
     section.style.boxSizing = "border-box";
     section.style.padding = "7px 2px 5px";
 
-    const style = document.createElement("style");
-    style.textContent = `
-        .zrl-optical-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: transparent; cursor: pointer; }
-        .zrl-optical-range::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; }
-        .zrl-optical-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 13px; height: 13px; margin-top: -3.5px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-        .zrl-optical-range::-moz-range-track { height: 6px; border-radius: 4px; }
-        .zrl-optical-range::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: var(--input-text, #B9C8D5); border: 1px solid var(--border-color, #66717D); }
-    `;
-    section.append(style);
 
     node._zrlOpticalControls = [];
     const initialTranslation = getTranslation(node._zrlLanguage || "en");
@@ -2942,10 +2741,7 @@ function createOpticalControls(node) {
         }
 
         const heading = makeText(initialTranslation[group.headingKey], "10px");
-        heading.style.fontWeight = "700";
-        heading.style.letterSpacing = "0.055em";
-        heading.style.opacity = "0.82";
-        heading.style.whiteSpace = "nowrap";
+        heading.className = "zrl-heading";
         column.append(heading);
 
         for (const definition of group.controls) {
@@ -3015,7 +2811,7 @@ function createOpticalControls(node) {
         applyLanguage(translation) {
             for (let i = 0; i < OPTICAL_CONTROL_GROUPS.length; i += 1) {
                 const group = OPTICAL_CONTROL_GROUPS[i];
-                const column = section.children[i + 1];
+                const column = section.children[i];
                 if (column?.children[0]) column.children[0].textContent = translation[group.headingKey];
             }
             for (const control of node._zrlOpticalControls) {
@@ -3045,7 +2841,6 @@ function applyLanguageToNode(node, code) {
     const translation = getTranslation(language);
     node._zrlLanguage = language;
     if (node._zrlPreviewUI) {
-        node._zrlPreviewUI.header.textContent = translation.livePreview;
         node._zrlPreviewUI.compare.applyLanguage(translation);
         node._zrlPreviewUI.languageIcon.setAttribute("aria-label", translation.language);
         node._zrlPreviewUI.languageIcon.title = translation.language;
@@ -3055,7 +2850,8 @@ function applyLanguageToNode(node, code) {
             ? `${translation.source}: ${node._zrlPreviewSourceSize[0]} × ${node._zrlPreviewSourceSize[1]}`
             : translation.previewQueue;
     }
-    if (node._zrlGrainPreviewUI) node._zrlGrainPreviewUI.label.textContent = translation.grainDetail;
+    if (node._zrlPreviewUI) node._zrlPreviewUI.loupe.title = translation.grainDetail;
+    node._zrlTabsUI?.applyLanguage(language);
     if (node._zrlGrainHeading) node._zrlGrainHeading.textContent = translation.filmGrain;
     node._zrlOpticalControlUI?.applyLanguage(translation);
     node._zrlLightControlUI?.applyLanguage(translation);
@@ -3071,7 +2867,6 @@ function applyLanguageToNode(node, code) {
     node._zrlLightLeakControlsUI?.applyLanguage(translation);
     node._zrlEmulsionUI?.applyLanguage(translation);
     if (node._zrlResetButton) {
-        node._zrlResetButton.textContent = translation.resetDefaults;
         node._zrlResetButton.title = translation.resetTitle;
         node._zrlResetButton.setAttribute("aria-label", translation.resetDefaults.replace(/^↺\s*/, ""));
     }
@@ -3120,10 +2915,20 @@ async function deletePreviewToken(token) {
     }
 }
 
+async function deleteVideoPreviewToken(token) {
+    if (!token) return;
+    try {
+        await api.fetchApi(`${VIDEO_PREVIEW_ENDPOINT}/${encodeURIComponent(token)}`, { method: "DELETE" });
+    } catch (_) {
+        // Video cache entries are also bounded and expire server-side.
+    }
+}
+
 function schedulePreview(node, immediate = false) {
     if (!node?._zrlPreviewUI) return;
+    node._zrlTabsUI?.sync();
     if (node._zrlPreviewTimer) clearTimeout(node._zrlPreviewTimer);
-    const run = () => requestPreview(node);
+    const run = () => (node._zrlVideo ? restartVideoRender(node) : requestPreview(node));
     if (immediate) run();
     else node._zrlPreviewTimer = setTimeout(run, PREVIEW_DEBOUNCE_MS);
 }
@@ -3170,13 +2975,10 @@ async function requestPreview(node) {
         if (requestId !== node._zrlPreviewRequestId) return;
 
         node._zrlPreviewProcessedSrc = `data:image/png;base64,${result.full_png}`;
-        renderActiveCompositionPreview(node);
-        const grainUI = node._zrlGrainPreviewUI;
-        if (grainUI) {
-            grainUI.grainImage.src = `data:image/png;base64,${result.grain_png}`;
-            grainUI.grainImage.style.visibility = "visible";
-        }
         ui.fullImage.style.visibility = "visible";
+        renderActiveCompositionPreview(node);
+        ui.grainImage.src = `data:image/png;base64,${result.grain_png}`;
+        ui.loupe.style.display = "block";
         node._zrlPreviewSourceSize = result.source_size;
         ui.status.textContent = `${translation.source}: ${result.source_size[0]} × ${result.source_size[1]}`;
         node.setDirtyCanvas?.(true, true);
@@ -3187,6 +2989,248 @@ async function requestPreview(node) {
         if (requestId !== node._zrlPreviewRequestId) return;
         ui.status.textContent = `${translation.previewUnavailable}: ${error?.message || error}`;
     }
+}
+
+function createVideoPlayerControls(node) {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.gap = "8px";
+    row.style.width = "100%";
+    row.style.height = "28px";
+    row.style.flexShrink = "0";
+
+    const play = document.createElement("button");
+    play.type = "button";
+    play.textContent = "▶";
+    play.title = "Play / Pause";
+    play.style.width = "32px";
+    play.style.height = "26px";
+    play.style.flexShrink = "0";
+
+    const scrubber = document.createElement("input");
+    scrubber.type = "range";
+    scrubber.min = "0";
+    scrubber.max = "0";
+    scrubber.step = "1";
+    scrubber.value = "0";
+    scrubber.style.flex = "1";
+    scrubber.style.minWidth = "0";
+
+    const label = makeText("0 / 0", "10px");
+    label.style.minWidth = "64px";
+    label.style.textAlign = "right";
+    label.style.fontVariantNumeric = "tabular-nums";
+
+    const fps = document.createElement("select");
+    fps.title = "Preview playback speed";
+    for (const value of VIDEO_FPS_OPTIONS) {
+        const option = document.createElement("option");
+        option.value = String(value);
+        option.textContent = `${value} fps`;
+        fps.append(option);
+    }
+    node.properties = node.properties || {};
+    fps.value = String(node.properties.zrl_preview_fps || 24);
+    fps.style.flexShrink = "0";
+
+    play.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setVideoPlaying(node, !node._zrlVideo.playing);
+    });
+    scrubber.addEventListener("input", () => {
+        updateRangeFill(scrubber);
+        setVideoPlaying(node, false);
+        node._zrlVideo.current = Number(scrubber.value);
+        showVideoFrame(node);
+        pumpVideoRender(node);
+    });
+    fps.addEventListener("change", () => {
+        node.properties.zrl_preview_fps = Number(fps.value);
+        if (node._zrlVideo.playing) setVideoPlaying(node, true);
+    });
+
+    row.append(play, scrubber, label, fps);
+    return { row, play, scrubber, label, fps };
+}
+
+function resetVideoState(node, token = null) {
+    const video = node._zrlVideo;
+    setVideoPlaying(node, false);
+    Object.assign(video, {
+        token, count: 0, stride: 1, sourceCount: 0, current: 0, generation: video.generation + 1,
+        original: [], processed: [], fresh: [],
+    });
+    const player = node._zrlVideoPlayerUI;
+    player.scrubber.max = "0";
+    player.scrubber.value = "0";
+    player.label.textContent = "0 / 0";
+}
+
+function setVideoPlaying(node, playing) {
+    const video = node._zrlVideo;
+    if (video.timer) clearInterval(video.timer);
+    video.timer = null;
+    video.playing = Boolean(playing) && video.count > 1;
+    node._zrlVideoPlayerUI.play.textContent = video.playing ? "❚❚" : "▶";
+    if (!video.playing) return;
+    const fps = Number(node._zrlVideoPlayerUI.fps.value) || 24;
+    video.timer = setInterval(() => {
+        video.current = (video.current + 1) % video.count;
+        showVideoFrame(node);
+    }, (1000 * video.stride) / fps);
+    pumpVideoRender(node);
+}
+
+function showVideoFrame(node) {
+    const video = node._zrlVideo;
+    const ui = node._zrlPreviewUI;
+    const player = node._zrlVideoPlayerUI;
+    if (!video.count) return;
+    const index = video.current;
+    const original = video.original[index];
+    const processed = video.processed[index] || original;
+    if (processed) {
+        ui.fullImage.src = processed;
+        ui.fullImage.style.visibility = "visible";
+    }
+    if (original) ui.beforeImage.src = original;
+    ui.beforeImage.style.visibility = original ? "visible" : "hidden";
+    applyPreviewMode(ui);
+    player.scrubber.value = String(index);
+    updateRangeFill(player.scrubber);
+    player.label.textContent = `${Math.min(index * video.stride + 1, video.sourceCount)} / ${video.sourceCount}`;
+}
+
+function restartVideoRender(node) {
+    const video = node._zrlVideo;
+    const translation = getTranslation(node._zrlLanguage || "en");
+    if (!video.token) {
+        node._zrlPreviewUI.status.textContent = translation.previewQueue;
+        return;
+    }
+    // Keep the stale processed frames on screen until their replacements arrive.
+    video.generation += 1;
+    video.fresh = [];
+    pumpVideoRender(node);
+}
+
+async function pumpVideoRender(node) {
+    const video = node._zrlVideo;
+    const ui = node._zrlPreviewUI;
+    if (video.pumping || !video.token) return;
+    video.pumping = true;
+    const translation = getTranslation(node._zrlLanguage || "en");
+    try {
+        while (video.token) {
+            const token = video.token;
+            const generation = video.generation;
+            // The playhead frame renders alone first for an immediate live
+            // response; the rest of the clip follows from the playhead onward.
+            const limit = video.fresh[video.current] ? VIDEO_FRAMES_PER_REQUEST : 1;
+            const indices = [];
+            const total = video.count || 1;
+            for (let step = 0; step < total && indices.length < limit; step += 1) {
+                const index = (video.current + step) % total;
+                if (!video.fresh[index]) indices.push(index);
+            }
+            if (!indices.length) break;
+            const response = await api.fetchApi(VIDEO_PREVIEW_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token,
+                    settings: readNodeSettings(node),
+                    frames: indices,
+                    include_original: indices.some((index) => !video.original[index]),
+                }),
+            });
+            let result;
+            try {
+                result = await response.json();
+            } catch (_) {
+                throw new Error(`Preview endpoint returned HTTP ${response.status}.`);
+            }
+            if (!response.ok) throw new Error(result?.error || `Preview failed (HTTP ${response.status}).`);
+            if (token !== video.token) continue;
+            if (!video.count) {
+                video.count = result.frame_count;
+                video.stride = result.frame_stride;
+                video.sourceCount = result.source_frame_count;
+                node._zrlVideoPlayerUI.scrubber.max = String(Math.max(0, video.count - 1));
+                node._zrlPreviewSourceSize = result.source_size;
+            }
+            for (const frame of result.frames) {
+                if (frame.original_jpg) video.original[frame.index] = `data:image/jpeg;base64,${frame.original_jpg}`;
+                if (generation !== video.generation) continue;
+                video.processed[frame.index] = `data:image/jpeg;base64,${frame.jpg}`;
+                video.fresh[frame.index] = true;
+            }
+            if (!video.playing) showVideoFrame(node);
+            const done = video.fresh.filter(Boolean).length;
+            ui.status.textContent = done < video.count
+                ? `${translation.previewUpdating} ${done} / ${video.count}`
+                : `${translation.source}: ${result.source_size[0]} × ${result.source_size[1]} · ${video.sourceCount} frames`;
+            node.setDirtyCanvas?.(true, true);
+        }
+    } catch (error) {
+        ui.status.textContent = `${translation.previewUnavailable}: ${error?.message || error}`;
+    } finally {
+        video.pumping = false;
+    }
+}
+
+function createControlTabs(node) {
+    const element = document.createElement("div");
+    element.className = "zrl-dr zrl-tabs";
+    element.setAttribute("role", "tablist");
+    const buttons = CONTROL_TABS.map((tab) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.setAttribute("role", "tab");
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setActiveTab(node, tab.id);
+        });
+        element.append(button);
+        return button;
+    });
+    element.addEventListener("pointerdown", (event) => event.stopPropagation());
+    return {
+        element,
+        buttons,
+        applyLanguage(language) {
+            const labels = TAB_LABELS[language] || TAB_LABELS.en;
+            CONTROL_TABS.forEach((tab, index) => { buttons[index].textContent = labels[tab.id]; });
+        },
+        sync() {
+            const settings = readNodeSettings(node);
+            CONTROL_TABS.forEach((tab, index) => {
+                const changed = tab.widgets.some((name) => name in settings && settings[name] !== DEFAULT_WIDGET_VALUES[name]);
+                buttons[index].setAttribute("aria-selected", node.properties.zrl_tab === tab.id ? "true" : "false");
+                buttons[index].setAttribute("data-active", changed ? "true" : "false");
+            });
+        },
+    };
+}
+
+function setActiveTab(node, tabId) {
+    node.properties.zrl_tab = CONTROL_TABS.some((tab) => tab.id === tabId) ? tabId : CONTROL_TABS[0].id;
+    for (const [id, element] of node._zrlTabPanels) element.hidden = id !== node.properties.zrl_tab;
+    node._zrlTabsUI.sync();
+    node.setDirtyCanvas?.(true, true);
+}
+
+// ComfyUI draws a DOM widget inset by its 10 px default margin on every side.
+const DOM_WIDGET_MARGIN = 10;
+
+// Fixed-height DOM widgets report their content height plus that inset, so only
+// the preview absorbs spare node height and nothing is clipped or overlaps.
+function contentHeight(element) {
+    const height = () => (element.hidden ? 0 : element.scrollHeight + 2 * DOM_WIDGET_MARGIN);
+    return { getMinHeight: height, getMaxHeight: height };
 }
 
 function wrapWidgetCallbacks(node) {
@@ -3208,15 +3252,17 @@ app.registerExtension({
     name: "zuanfilm.retrolab.live_preview",
 
     nodeCreated(node, extensionApp) {
-        const isRetrolab = node?.comfyClass === NODE_NAME ||
-            node?.type === NODE_NAME ||
-            node?.constructor?.nodeData?.name === NODE_NAME ||
-            node?.title === "Zuanfilm Retrolab";
+        const isRetrolab = [NODE_NAME, VIDEO_NODE_NAME].some((name) => node?.comfyClass === name ||
+            node?.type === name ||
+            node?.constructor?.nodeData?.name === name) ||
+            node?.title === "Zuanfilm Retrolab" ||
+            node?.title === "Zuanfilm Retrolab Video";
         if (isRetrolab) applyInitialNodeWidth(node, extensionApp);
     },
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== NODE_NAME) return;
+        if (nodeData.name !== NODE_NAME && nodeData.name !== VIDEO_NODE_NAME) return;
+        const isVideo = nodeData.name === VIDEO_NODE_NAME;
 
         // Build the creative UI during node construction. Initial geometry is
         // applied later by the extension-level nodeCreated hook, after the
@@ -3265,69 +3311,74 @@ app.registerExtension({
             const highlightConfinementWidget = this.widgets?.find((widget) => widget.name === "highlight_confinement");
             if (solarizationWidget) solarizationWidget.hidden = true;
             if (highlightConfinementWidget) highlightConfinementWidget.hidden = true;
+            // ComfyUI attaches a "control after generate" row to noise_seed; it would
+            // otherwise draw over the Darkroom panels.
+            for (const linked of noiseSeedWidget.linkedWidgets || []) linked.hidden = true;
+
+            if (!darkroomStyleInstalled) {
+                const style = document.createElement("style");
+                style.textContent = DARKROOM_STYLE;
+                (document.head || document.body).append(style);
+                darkroomStyleInstalled = true;
+            }
+            this.properties = this.properties || {};
 
             const previewUI = createPreviewPanel();
             this._zrlPreviewUI = previewUI;
             previewUI.compare.setOnChange(() => renderActiveCompositionPreview(this));
-            addDOMWidgetAt(this, "zrl_composition_preview", previewUI.panel, "grain_amount");
+            if (isVideo) {
+                this._zrlVideo = { generation: 0, playing: false, timer: null, pumping: false };
+                this._zrlVideoPlayerUI = createVideoPlayerControls(this);
+                previewUI.panel.append(this._zrlVideoPlayerUI.row);
+                resetVideoState(this);
+            }
+            addDOMWidgetAt(this, "zrl_composition_preview", previewUI.panel, "grain_amount", { getMinHeight: () => 280 });
             const emulsionUI = createEmulsionAtlasControl(this, emulsionBackendWidget, whiteBalanceTemperatureWidget, whiteBalanceTintWidget, emulsionResponseWidget);
             this._zrlEmulsionUI = emulsionUI;
-            addDOMWidgetAt(this, "zrl_emulsion_atlas", emulsionUI.row, "grain_amount");
+            addDOMWidgetAt(this, "zrl_emulsion_atlas", emulsionUI.row, "grain_amount", contentHeight(emulsionUI.row));
+            const tabsUI = createControlTabs(this);
+            this._zrlTabsUI = tabsUI;
+            addDOMWidgetAt(this, "zrl_tabs", tabsUI.element, "grain_amount", contentHeight(tabsUI.element));
+
+            const colorSection = document.createElement("div");
+            colorSection.className = "zrl-dr zrl-panel";
+            colorSection.append(emulsionUI.whiteBalanceUI.column);
 
             const halationColorUI = createColorPickerRow("halationColor", halationBackendWidget, this, DEFAULT_HALATION_COLOR);
             this._zrlHalationColorUI = halationColorUI;
             const lightControlUI = createLightControls(this, halationColorUI);
             this._zrlLightControlUI = lightControlUI;
-            lightControlUI.section.addEventListener("pointerdown", (event) => event.stopPropagation());
-            lightControlUI.section.addEventListener("mousedown", (event) => event.stopPropagation());
-            addDOMWidgetAt(this, "zrl_light_controls", lightControlUI.section, "solarization");
-            addDOMWidgetAt(this, "zrl_divider_sabattier", createGroupDivider(), "solarization", {
-                // ComfyUI DOM widgets default to a 50 graph-unit minimum height.
-                // Explicit bounds keep this one-pixel separator from becoming a thick band.
-                getMinHeight: () => 1,
-                getMaxHeight: () => 1,
-            });
             const toneControlUI = createToneControls(this);
             this._zrlToneControlUI = toneControlUI;
-            addDOMWidgetAt(this, "zrl_tone_controls", toneControlUI.section, "solarization");
-            addDOMWidgetAt(this, "zrl_divider_light_leak", createGroupDivider(), "leak_mode", {
-                getMinHeight: () => 1,
-                getMaxHeight: () => 1,
-            });
-            addDOMWidgetAt(this, "zrl_divider_optical_finish", createGroupDivider(), "soft_focus_amount", {
-                getMinHeight: () => 1,
-                getMaxHeight: () => 1,
-            });
-            const opticalControlUI = createOpticalControls(this);
-            this._zrlOpticalControlUI = opticalControlUI;
-            addDOMWidgetAt(this, "zrl_optical_controls", opticalControlUI.section, "soft_focus_amount");
-
             const leakColorUI = createColorPickerRow("leakColor", leakBackendWidget, this, DEFAULT_COLOR);
             const leakControls = createLightLeakControls(this, leakColorUI);
             this._zrlLightLeakControlsUI = leakControls;
-            leakControls.section.addEventListener("pointerdown", (event) => event.stopPropagation());
-            leakControls.section.addEventListener("mousedown", (event) => event.stopPropagation());
-            addDOMWidgetAt(this, "zrl_light_leak_controls", leakControls.section, "leak_mode");
+            const opticalControlUI = createOpticalControls(this);
+            this._zrlOpticalControlUI = opticalControlUI;
+            const grainControls = createGrainControls(this);
+            this._zrlGrainControlsUI = grainControls;
+            this._zrlGrainHeading = grainControls.heading;
 
-            const footer = document.createElement("div");
-            footer.style.display = "flex";
-            footer.style.justifyContent = "flex-end";
-            footer.style.width = "100%";
+            this._zrlTabPanels = new Map([
+                ["color", colorSection],
+                ["light", lightControlUI.section],
+                ["tone", toneControlUI.section],
+                ["leak", leakControls.section],
+                ["optics", opticalControlUI.section],
+                ["grain", grainControls.section],
+            ]);
+            for (const [tabId, section] of this._zrlTabPanels) {
+                section.addEventListener("pointerdown", (event) => event.stopPropagation());
+                section.addEventListener("mousedown", (event) => event.stopPropagation());
+                addDOMWidgetAt(this, `zrl_${tabId}_controls`, section, "grain_amount", contentHeight(section));
+            }
+
             const resetButton = document.createElement("button");
             resetButton.type = "button";
-            resetButton.textContent = "↺  Reset to Defaults";
+            resetButton.className = "zrl-glass zrl-icon";
+            resetButton.textContent = "↺";
             resetButton.title = "Restore all Zuanfilm Retrolab controls to their factory defaults";
             resetButton.setAttribute("aria-label", "Reset Zuanfilm Retrolab to Defaults");
-            resetButton.style.padding = "4px 8px";
-            resetButton.style.border = "1px solid var(--border-color, #555)";
-            resetButton.style.borderRadius = "5px";
-            resetButton.style.background = "var(--comfy-input-bg, var(--comfy-menu-bg, #25282D))";
-            resetButton.style.color = "var(--fg-color, #DDD)";
-            resetButton.style.fontSize = "9px";
-            resetButton.style.cursor = "pointer";
-            resetButton.style.opacity = "0.9";
-            resetButton.addEventListener("mouseenter", () => { resetButton.style.opacity = "1"; });
-            resetButton.addEventListener("mouseleave", () => { resetButton.style.opacity = "0.9"; });
             resetButton.addEventListener("click", (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -3344,13 +3395,6 @@ app.registerExtension({
                 syncLightControls(this);
                 syncToneControls(this);
                 grainControls.sync();
-                for (const control of this._zrlTextureControls || []) {
-                    const widget = this.widgets?.find((candidate) => candidate.name === control.name);
-                    if (!widget) continue;
-                    control.input.value = String(widget.value);
-                    control.value.textContent = Number(widget.value).toFixed(control.precision);
-                    updateRangeFill(control.input);
-                }
                 syncOpticalControls(this);
                 schedulePreview(this);
                 this.setDirtyCanvas?.(true, true);
@@ -3360,29 +3404,9 @@ app.registerExtension({
             previewUI.resetSlot.append(resetButton);
             this._zrlResetButton = resetButton;
 
-            const grainControls = createGrainControls(this);
-            this._zrlGrainControlsUI = grainControls;
-            this._zrlGrainHeading = grainControls.heading;
-            const grainPreviewUI = createGrainDetailPanel();
-            this._zrlGrainPreviewUI = grainPreviewUI;
-
-            const bottomRoot = document.createElement("div");
-            bottomRoot.style.display = "flex";
-            bottomRoot.style.flexDirection = "column";
-            bottomRoot.style.gap = "8px";
-            bottomRoot.style.width = "100%";
-            bottomRoot.style.boxSizing = "border-box";
-            bottomRoot.style.padding = "3px 4px 5px";
-            bottomRoot.append(grainControls.section, grainPreviewUI.panel);
-            bottomRoot.addEventListener("pointerdown", (event) => event.stopPropagation());
-            bottomRoot.addEventListener("mousedown", (event) => event.stopPropagation());
             previewUI.panel.addEventListener("pointerdown", (event) => event.stopPropagation());
             previewUI.panel.addEventListener("mousedown", (event) => event.stopPropagation());
-            halationColorUI.row.addEventListener("pointerdown", (event) => event.stopPropagation());
-            halationColorUI.row.addEventListener("mousedown", (event) => event.stopPropagation());
             previewUI.languageSelect.addEventListener("change", () => setLanguageForAllNodes(this, previewUI.languageSelect.value));
-
-            addDOMWidgetAt(this, "zrl_bottom_controls", bottomRoot);
 
             this._zrlApplyLanguage = (language) => applyLanguageToNode(this, language);
             wrapWidgetCallbacks(this);
@@ -3391,6 +3415,7 @@ app.registerExtension({
             syncLightControls(this);
             syncToneControls(this);
             grainControls.sync();
+            setActiveTab(this, this.properties.zrl_tab);
 
             const originalConfigure = this.onConfigure;
             this.onConfigure = function (...configureArgs) {
@@ -3414,17 +3439,19 @@ app.registerExtension({
                     updateRangeFill(control.input);
                 }
                 syncOpticalControls(this);
+                setActiveTab(this, this.properties.zrl_tab);
                 this._zrlPreviewToken = null;
                 this._zrlPreviewSourceSize = null;
                 this._zrlPreviewOriginalSrc = null;
                 this._zrlPreviewOriginalRequested = false;
                 this._zrlPreviewProcessedSrc = null;
-                previewUI.compare.setBefore(false);
-                if (this._zrlPreviewUI) {
-                    this._zrlPreviewUI.fullImage.style.visibility = "hidden";
-                    this._zrlPreviewUI.status.textContent = getTranslation(this._zrlLanguage).previewQueue;
-                }
-                if (this._zrlGrainPreviewUI) this._zrlGrainPreviewUI.grainImage.style.visibility = "hidden";
+                previewUI.compare.setMode("split");
+                previewUI.fullImage.style.visibility = "hidden";
+                previewUI.beforeImage.style.visibility = "hidden";
+                previewUI.loupe.style.display = "none";
+                applyPreviewMode(previewUI);
+                previewUI.status.textContent = getTranslation(this._zrlLanguage).previewQueue;
+                if (this._zrlVideo) resetVideoState(this);
                 wrapWidgetCallbacks(this);
                 this._zrlApplyLanguage?.(loadStoredLanguage());
                 this.setDirtyCanvas?.(true, true);
@@ -3437,6 +3464,18 @@ app.registerExtension({
         const originalExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function (message, ...args) {
             const result = originalExecuted?.call(this, message, ...args);
+            if (this._zrlVideo) {
+                const videoValues = message?.retrolab_video_preview_id ?? message?.ui?.retrolab_video_preview_id ?? message?.output?.retrolab_video_preview_id;
+                const videoToken = Array.isArray(videoValues) ? videoValues[0] : videoValues;
+                if (typeof videoToken === "string" && videoToken.length === 32) {
+                    const oldToken = this._zrlVideo.token;
+                    if (oldToken && oldToken !== videoToken) deleteVideoPreviewToken(oldToken);
+                    this._zrlPreviewUI?.compare.setMode("split");
+                    resetVideoState(this, videoToken);
+                    pumpVideoRender(this);
+                }
+                return result;
+            }
             const values = message?.retrolab_preview_id ?? message?.ui?.retrolab_preview_id ?? message?.output?.retrolab_preview_id;
             const token = Array.isArray(values) ? values[0] : values;
             if (typeof token === "string" && token.length === 32) {
@@ -3446,7 +3485,7 @@ app.registerExtension({
                     this._zrlPreviewOriginalSrc = null;
                     this._zrlPreviewOriginalRequested = false;
                     this._zrlPreviewProcessedSrc = null;
-                    this._zrlPreviewUI?.compare.setBefore(false);
+                    this._zrlPreviewUI?.compare.setMode("split");
                 }
                 if (oldToken && oldToken !== token) deletePreviewToken(oldToken);
                 schedulePreview(this, true);
@@ -3460,6 +3499,10 @@ app.registerExtension({
             if (this._zrlPreviewTimer) clearTimeout(this._zrlPreviewTimer);
             this._zrlPreviewRequestId = (this._zrlPreviewRequestId || 0) + 1;
             deletePreviewToken(this._zrlPreviewToken);
+            if (this._zrlVideo) {
+                deleteVideoPreviewToken(this._zrlVideo.token);
+                resetVideoState(this);
+            }
             this._zrlPreviewToken = null;
             this._zrlPreviewOriginalSrc = null;
             this._zrlPreviewOriginalRequested = false;
